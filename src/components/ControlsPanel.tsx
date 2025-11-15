@@ -14,7 +14,16 @@ interface ControlsPanelProps {
 
 const FONT_MIN_LIMIT = 10
 const FONT_MAX_LIMIT = 160
+const ROTATION_PRESETS = [
+  { id: 'none', label: '回転なし', angles: [0] },
+  { id: 'light', label: '軽め（-30°〜30°）', angles: [-30, -15, 0, 15, 30] },
+  { id: 'wide', label: 'ランダム（-60°〜60°）', angles: [-60, -30, 0, 30, 60] },
+]
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+const arraysEqual = (a: number[], b: number[]) => {
+  if (a.length !== b.length) return false
+  return a.every((value, index) => value === b[index])
+}
 
 export const ControlsPanel = ({
   text,
@@ -25,6 +34,10 @@ export const ControlsPanel = ({
   onSettingsChange,
   tokenCount,
 }: ControlsPanelProps) => {
+  const rotationPresetId =
+    ROTATION_PRESETS.find((preset) => arraysEqual(preset.angles, settings.rotationAngles))?.id ??
+    'custom'
+
   const handleTextareaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     onTextChange(event.target.value)
   }
@@ -130,6 +143,26 @@ export const ControlsPanel = ({
         >
           <option value="archimedean">アーキメディアン</option>
           <option value="rectangular">矩形</option>
+        </select>
+
+        <label className="field-label" htmlFor="rotation">
+          回転
+        </label>
+        <select
+          id="rotation"
+          value={rotationPresetId}
+          onChange={(event) => {
+            const preset = ROTATION_PRESETS.find(({ id }) => id === event.target.value)
+            if (preset) {
+              onSettingsChange({ rotationAngles: preset.angles })
+            }
+          }}
+        >
+          {ROTATION_PRESETS.map((preset) => (
+            <option key={preset.id} value={preset.id}>
+              {preset.label}
+            </option>
+          ))}
         </select>
 
         <label className="field-label" htmlFor="padding">

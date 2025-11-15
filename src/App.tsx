@@ -17,7 +17,7 @@ function App() {
     fontSizeRange: [18, 78],
     spiral: 'archimedean',
     padding: 2,
-    rotationAngles: [-60, -30, 0, 30, 60],
+    rotationAngles: [0],
     colorSchemeId: DEFAULT_COLOR_SCHEME_ID,
   })
 
