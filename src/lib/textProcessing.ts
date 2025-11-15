@@ -2,9 +2,6 @@ import type { Tokenizer, IpadicFeatures } from 'kuromoji'
 import type { WordFrequency } from '../types'
 
 const TARGET_POS = new Set(['名詞', '動詞', '形容詞', '副詞'])
-const FALLBACK_DELIMITER =
-  /[\s、。．，,.!！?？・「」『』（）()［］\[\]【】{}<>《》〈〉\/\\|:：;；"'“”'’・]+/u
-
 export const normalizeToken = (token: string): string => {
   return token.normalize('NFKC').toLocaleLowerCase('ja-JP')
 }
@@ -36,17 +33,6 @@ const tokenizeWithKuromoji = (
     .filter((token) => !shouldSkipToken(token, stopwords, minTokenLength))
 }
 
-const fallbackTokenize = (
-  text: string,
-  stopwords: Set<string>,
-  minTokenLength: number,
-): string[] => {
-  return text
-    .split(FALLBACK_DELIMITER)
-    .map((token) => normalizeToken(token.trim()))
-    .filter((token) => !shouldSkipToken(token, stopwords, minTokenLength))
-}
-
 interface FrequencyOptions {
   text: string
   tokenizer: Tokenizer<IpadicFeatures> | null
@@ -62,11 +48,9 @@ export const computeWordFrequencies = ({
   maxWords,
   minTokenLength = 2,
 }: FrequencyOptions): WordFrequency[] => {
-  if (!text.trim()) return []
+  if (!text.trim() || !tokenizer) return []
 
-  const tokens = tokenizer
-    ? tokenizeWithKuromoji(text, tokenizer, stopwords, minTokenLength)
-    : fallbackTokenize(text, stopwords, minTokenLength)
+  const tokens = tokenizeWithKuromoji(text, tokenizer, stopwords, minTokenLength)
 
   const counts = new Map<string, number>()
 
