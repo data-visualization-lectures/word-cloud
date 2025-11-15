@@ -19,3 +19,17 @@ npm run build # 本番ビルド
 ```
 
 `npm run dev` を使わず `npm run build` → 任意の静的サーバーで `dist/` を配信しても動作します。CDN アクセスが許可されている環境であれば追加設定は不要です。
+
+## 今後の拡張計画（Word Cloud ↔ Word Bubble）
+
+ワードクラウドに加えて、背景に円（バブル）を描画するモードを追加する予定です。以下のような方針で実装を検討しています。
+
+1. **モードの切り替え**: UI から `word cloud / word bubble` を選択できるようにし、React state で `viewMode` を管理。
+2. **レイアウト計算**:
+   - ワードクラウド: 既存の `d3-cloud` で位置・回転・フォントサイズを算出。
+   - ワードバブル: `d3-force` や `d3.pack` を利用し、value に応じた半径の円が互いに重ならないように配置。
+3. **アニメーション**: モード切替時は `d3-transition` によって `<g>` 要素の `transform`, `font-size`, `circle radius` 等を滑らかに補間する。円の背景色は `d3-scale-chromatic` で計算する。
+4. **SVG 構造の統一**: `<g class="word">` の中に `<circle>` と `<text>` を常に描画し、モードに応じて見た目だけ切り替えることで、アニメーションや data join を簡単にする。
+5. **SVG エクスポート**: bubble モードでも「SVGダウンロード」で同じ描画結果を得られるようにする。
+
+この計画に沿って、今後 Word Bubble モードの追加を行います。
