@@ -1,16 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { WordCloudSettings, WordFrequency } from '../types'
-import { useWordCloudLayout } from '../hooks/useWordCloudLayout'
+import { select } from 'd3-selection'
+import { transition } from 'd3-transition'
+import type { ViewMode, WordCloudSettings, WordFrequency } from '../types'
+import { useWordLayout, type LayoutWord } from '../hooks/useWordLayout'
 
 interface WordCloudPreviewProps {
   words: WordFrequency[]
   settings: WordCloudSettings
   statusMessage: string | null
+  viewMode: ViewMode
 }
 
 const DEFAULT_RATIO = 5 / 3
 
-export const WordCloudPreview = ({ words, settings, statusMessage }: WordCloudPreviewProps) => {
+export const WordCloudPreview = ({
+  words,
+  settings,
+  statusMessage,
+  viewMode,
+}: WordCloudPreviewProps) => {
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
@@ -38,12 +46,62 @@ export const WordCloudPreview = ({ words, settings, statusMessage }: WordCloudPr
     return () => observer.disconnect()
   }, [])
 
-  const { layoutWords, isCalculating } = useWordCloudLayout(
+  const { layoutWords, isCalculating } = useWordLayout(
     words,
     Math.max(dimensions.width, 1),
     Math.max(dimensions.height, 1),
     settings,
+    viewMode,
   )
+
+  useEffect(() => {
+    if (!svgRef.current) return
+    const svg = select(svgRef.current)
+    const t = transition().duration(700)
+    const wordsSelection = svg
+      .selectAll<SVGGElement, LayoutWord>('g.word')
+      .data(layoutWords, (d) => d?.text ?? '')
+
+    wordsSelection
+      .exit()
+      .transition(t)
+      .style('opacity', 0)
+      .remove()
+
+    const enter = wordsSelection
+      .enter()
+      .append('g')
+      .attr('class', 'word')
+      .style('opacity', 0)
+
+    enter.append('circle').attr('r', 0).attr('opacity', 0)
+    enter
+      .append('text')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'central')
+
+    const merged = enter.merge(wordsSelection as any)
+
+    merged
+      .transition(t)
+      .style('opacity', 1)
+      .attr('transform', (d) => `translate(${d.x}, ${d.y})`)
+
+    merged
+      .select<SVGTextElement>('text')
+      .text((d: LayoutWord) => d.text)
+      .transition(t)
+      .attr('fill', (d: LayoutWord) => d.color)
+      .attr('font-size', (d: LayoutWord) => d.fontSize)
+      .attr('transform', (d: LayoutWord) => `rotate(${d.rotate})`)
+
+    merged
+      .select<SVGCircleElement>('circle')
+      .transition(t)
+      .attr('r', (d: LayoutWord) => (viewMode === 'bubble' ? d.radius : 0))
+      .attr('fill', (d: LayoutWord) => d.color)
+      .attr('opacity', viewMode === 'bubble' ? 0.15 : 0)
+  }, [layoutWords, viewMode])
 
   const placeholderMessage = useMemo(() => {
     if (statusMessage) return statusMessage
@@ -84,32 +142,13 @@ export const WordCloudPreview = ({ words, settings, statusMessage }: WordCloudPr
       </header>
 
       <div className="preview-canvas-wrapper" ref={wrapperRef}>
-        {layoutWords.length > 0 && (
-          <svg
-            ref={svgRef}
-            className="preview-canvas"
-            viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
-            role="img"
-            aria-label="日本語ワードクラウド"
-          >
-            <g>
-              {layoutWords.map((word) => (
-                <text
-                  key={`${word.text}-${word.x}-${word.y}`}
-                  fontSize={word.fontSize}
-                  fill={word.color}
-                  textAnchor="middle"
-                  transform={`translate(${word.x}, ${word.y}) rotate(${word.rotate})`}
-                >
-                  <title>
-                    {word.text} ({word.value})
-                  </title>
-                  {word.text}
-                </text>
-              ))}
-            </g>
-          </svg>
-        )}
+        <svg
+          ref={svgRef}
+          className="preview-canvas"
+          viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+          role="img"
+          aria-label="日本語ワードクラウド"
+        />
 
         {isCalculating && (
           <div className="preview-message">レイアウトを計算しています...</div>

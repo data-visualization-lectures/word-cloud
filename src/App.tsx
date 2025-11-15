@@ -6,7 +6,7 @@ import { DEFAULT_COLOR_SCHEME_ID } from './constants/colors'
 import { DEFAULT_JA_STOPWORDS, SAMPLE_TEXT } from './constants/stopwords'
 import { useKuromojiTokenizer } from './hooks/useKuromojiTokenizer'
 import { computeWordFrequencies, parseStopwords } from './lib/textProcessing'
-import type { WordCloudSettings } from './types'
+import type { ViewMode, WordCloudSettings } from './types'
 
 const defaultStopwords = DEFAULT_JA_STOPWORDS.join('\n')
 
@@ -23,6 +23,7 @@ function App() {
   })
 
   const { tokenizer, loading: tokenizerLoading, error: tokenizerError } = useKuromojiTokenizer()
+  const [viewMode, setViewMode] = useState<ViewMode>('cloud')
 
   const stopwordsSet = useMemo(() => {
     const parsed = parseStopwords(stopwordsText)
@@ -61,8 +62,15 @@ function App() {
           settings={settings}
           onSettingsChange={handleSettingsChange}
           tokenCount={wordFrequencies.length}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
-        <WordCloudPreview words={wordFrequencies} settings={settings} statusMessage={previewStatus} />
+        <WordCloudPreview
+          words={wordFrequencies}
+          settings={settings}
+          statusMessage={previewStatus}
+          viewMode={viewMode}
+        />
       </main>
     </div>
   )

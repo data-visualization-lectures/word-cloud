@@ -1,6 +1,6 @@
 import type { ChangeEvent } from 'react'
 import { COLOR_SCHEMES } from '../constants/colors'
-import type { WordCloudSettings } from '../types'
+import type { ViewMode, WordCloudSettings } from '../types'
 
 interface ControlsPanelProps {
   text: string
@@ -10,6 +10,8 @@ interface ControlsPanelProps {
   settings: WordCloudSettings
   onSettingsChange: (patch: Partial<WordCloudSettings>) => void
   tokenCount: number
+  viewMode: ViewMode
+  onViewModeChange: (mode: ViewMode) => void
 }
 
 const FONT_MIN_LIMIT = 10
@@ -33,6 +35,8 @@ export const ControlsPanel = ({
   settings,
   onSettingsChange,
   tokenCount,
+  viewMode,
+  onViewModeChange,
 }: ControlsPanelProps) => {
   const rotationPresetId =
     ROTATION_PRESETS.find((preset) => arraysEqual(preset.angles, settings.rotationAngles))?.id ??
@@ -129,6 +133,18 @@ export const ControlsPanel = ({
               {scheme.label}
             </option>
           ))}
+        </select>
+
+        <label className="field-label" htmlFor="view-mode">
+          表示モード
+        </label>
+        <select
+          id="view-mode"
+          value={viewMode}
+          onChange={(event) => onViewModeChange(event.target.value as ViewMode)}
+        >
+          <option value="cloud">Word Cloud</option>
+          <option value="bubble">Word Bubble</option>
         </select>
 
         <label className="field-label" htmlFor="spiral">

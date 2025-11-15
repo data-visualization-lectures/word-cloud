@@ -1,4 +1,5 @@
 export type SpiralOption = 'archimedean' | 'rectangular'
+export type ViewMode = 'cloud' | 'bubble'
 
 export interface WordCloudSettings {
   maxWords: number
