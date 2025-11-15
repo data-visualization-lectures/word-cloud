@@ -1,9 +1,9 @@
-import TinySegmenter from 'tiny-segmenter'
+import type { Tokenizer, IpadicFeatures } from 'kuromoji'
 import type { WordFrequency } from '../types'
 
+const TARGET_POS = new Set(['名詞', '動詞', '形容詞', '副詞'])
 const FALLBACK_DELIMITER =
   /[\s、。．，,.!！?？・「」『』（）()［］\[\]【】{}<>《》〈〉\/\\|:：;；"'“”'’・]+/u
-const segmenter = new TinySegmenter()
 
 export const normalizeToken = (token: string): string => {
   return token.normalize('NFKC').toLocaleLowerCase('ja-JP')
@@ -21,34 +21,35 @@ const shouldSkipToken = (
   return false
 }
 
-const tokenizeJapanese = (
+const tokenizeWithKuromoji = (
+  text: string,
+  tokenizer: Tokenizer<IpadicFeatures>,
+  stopwords: Set<string>,
+  minTokenLength: number,
+): string[] => {
+  const baseTokens = tokenizer.tokenize(text)
+
+  return baseTokens
+    .filter((token) => TARGET_POS.has(token.pos as string))
+    .map((token) => (token.basic_form && token.basic_form !== '*' ? token.basic_form : token.surface_form))
+    .map((token) => normalizeToken(token.trim()))
+    .filter((token) => !shouldSkipToken(token, stopwords, minTokenLength))
+}
+
+const fallbackTokenize = (
   text: string,
   stopwords: Set<string>,
   minTokenLength: number,
 ): string[] => {
-  const sentences = text
-    .split(/[\n\r]+/)
-    .map((sentence) => sentence.trim())
-    .filter(Boolean)
-
-  const tokens: string[] = []
-  sentences.forEach((sentence) => {
-    const segmented = segmenter.segment(sentence)
-    tokens.push(...segmented)
-  })
-
-  const cleaned = tokens
-    .flatMap((token) =>
-      FALLBACK_DELIMITER.test(token) ? token.split(FALLBACK_DELIMITER) : [token],
-    )
+  return text
+    .split(FALLBACK_DELIMITER)
     .map((token) => normalizeToken(token.trim()))
     .filter((token) => !shouldSkipToken(token, stopwords, minTokenLength))
-
-  return cleaned
 }
 
 interface FrequencyOptions {
   text: string
+  tokenizer: Tokenizer<IpadicFeatures> | null
   stopwords: Set<string>
   maxWords: number
   minTokenLength?: number
@@ -56,13 +57,16 @@ interface FrequencyOptions {
 
 export const computeWordFrequencies = ({
   text,
+  tokenizer,
   stopwords,
   maxWords,
   minTokenLength = 2,
 }: FrequencyOptions): WordFrequency[] => {
   if (!text.trim()) return []
 
-  const tokens = tokenizeJapanese(text, stopwords, minTokenLength)
+  const tokens = tokenizer
+    ? tokenizeWithKuromoji(text, tokenizer, stopwords, minTokenLength)
+    : fallbackTokenize(text, stopwords, minTokenLength)
 
   const counts = new Map<string, number>()
 
