@@ -47,7 +47,7 @@
 
 .form-grid {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
+  grid-template-columns: 150px minmax(0, 1fr);
   gap: 0.5rem 0.75rem;
   align-items: center;
 }
