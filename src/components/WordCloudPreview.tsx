@@ -73,6 +73,7 @@ export const WordCloudPreview = ({
       .append('g')
       .attr('class', 'word')
       .style('opacity', 0)
+      .attr('transform', `translate(${dimensions.width / 2}, ${dimensions.height / 2})`)
 
     enter.append('circle').attr('r', 0).attr('opacity', 0)
     enter
@@ -101,7 +102,7 @@ export const WordCloudPreview = ({
       .attr('r', (d: LayoutWord) => (viewMode === 'bubble' ? d.radius : 0))
       .attr('fill', (d: LayoutWord) => d.color)
       .attr('opacity', viewMode === 'bubble' ? 0.15 : 0)
-  }, [layoutWords, viewMode])
+  }, [layoutWords, viewMode, dimensions.height, dimensions.width])
 
   const placeholderMessage = useMemo(() => {
     if (statusMessage) return statusMessage
@@ -111,7 +112,7 @@ export const WordCloudPreview = ({
     return null
   }, [statusMessage, words.length, isCalculating])
 
-  const handleDownload = () => {
+  const handleDownloadSvg = () => {
     if (!svgRef.current || !layoutWords.length) return
 
     const serializer = new XMLSerializer()
@@ -127,6 +128,47 @@ export const WordCloudPreview = ({
     URL.revokeObjectURL(url)
   }
 
+  const handleDownloadPng = () => {
+    if (!svgRef.current || !layoutWords.length || !dimensions.width || !dimensions.height) return
+
+    const serializer = new XMLSerializer()
+    const source = serializer.serializeToString(svgRef.current)
+    const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const image = new Image()
+    image.crossOrigin = 'anonymous'
+    image.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = dimensions.width
+      canvas.height = dimensions.height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        URL.revokeObjectURL(url)
+        return
+      }
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(image, 0, 0)
+      canvas.toBlob((pngBlob) => {
+        if (!pngBlob) {
+          URL.revokeObjectURL(url)
+          return
+        }
+        const pngUrl = URL.createObjectURL(pngBlob)
+        const link = document.createElement('a')
+        link.href = pngUrl
+        link.download = 'word-cloud.png'
+        link.click()
+        URL.revokeObjectURL(pngUrl)
+        URL.revokeObjectURL(url)
+      }, 'image/png')
+    }
+    image.onerror = () => {
+      URL.revokeObjectURL(url)
+    }
+    image.src = url
+  }
+
   return (
     <section className="preview-panel">
       <header className="preview-header">
@@ -136,9 +178,14 @@ export const WordCloudPreview = ({
             表示語数: <strong>{layoutWords.length}</strong>
           </p>
         </div>
-        <button type="button" onClick={handleDownload} disabled={!layoutWords.length}>
-          SVGダウンロード
-        </button>
+        <div className="download-buttons">
+          <button type="button" onClick={handleDownloadSvg} disabled={!layoutWords.length}>
+            SVGダウンロード
+          </button>
+          <button type="button" onClick={handleDownloadPng} disabled={!layoutWords.length}>
+            PNGダウンロード
+          </button>
+        </div>
       </header>
 
       <div className="preview-canvas-wrapper" ref={wrapperRef}>

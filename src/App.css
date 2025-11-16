@@ -41,6 +41,10 @@
   gap: 0.5rem;
 }
 
+.text-input-section {
+  gap: 0.75rem;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -52,6 +56,30 @@
   font-weight: 600;
   color: #0f172a;
   font-size: 0.9rem;
+}
+
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.accordion-toggle {
+  padding: 0.3rem 0.9rem;
+  font-size: 0.8rem;
+  background: #0f172a;
+  box-shadow: none;
+}
+
+.accordion-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
 .textarea {
@@ -81,6 +109,23 @@
 .field-hint {
   font-size: 0.85rem;
   color: #64748b;
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.input-actions .field-hint {
+  margin: 0;
+  flex: 1;
+}
+
+.generate-button {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .controls-panel input,
@@ -191,4 +236,8 @@ svg {
   .controls-panel {
     flex: 1;
   }
+}
+.download-buttons {
+  display: flex;
+  gap: 0.5rem;
 }
