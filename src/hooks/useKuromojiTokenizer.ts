@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react'
 import type { Tokenizer, IpadicFeatures } from 'kuromoji'
 
-const KUROMOJI_SCRIPT_SRC = 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js'
+const withBasePath = (path: string) => {
+  const base = import.meta.env.BASE_URL ?? '/'
+  const normalizedBase = base.endsWith('/') ? base : `${base}/`
+  const normalizedPath = path.replace(/^\//, '')
+  return `${normalizedBase}${normalizedPath}`
+}
+
+const KUROMOJI_SCRIPT_SRC = withBasePath('vendor/kuromoji/kuromoji.js')
 const KUROMOJI_SCRIPT_ID = 'kuromoji-script'
-const KUROMOJI_DICT_PATH = 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/'
+const KUROMOJI_DICT_PATH = withBasePath('vendor/kuromoji/dict/')
 
 let scriptPromise: Promise<void> | null = null
 

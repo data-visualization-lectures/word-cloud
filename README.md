@@ -4,11 +4,11 @@
 
 ## Kuromoji の読み込み方法
 
-最もシンプルで確実な構成にするため、CDN で配布されているブラウザ版 Kuromoji を動的に読み込んでいます。
+現在は `public/vendor/kuromoji/` にスクリプトと辞書を同梱し、`src/hooks/useKuromojiTokenizer.ts` で `import.meta.env.BASE_URL` を考慮した相対パスから読み込んでいます。
 
-- `src/hooks/useKuromojiTokenizer.ts` が初回レンダリング時に `<script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js">` を自動で挿入し、`window.kuromoji` が利用可能になってからトークナイザーを構築します。
-- 辞書ファイルも CDN（`https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/`）から取得するため、リポジトリに辞書を同梱する必要はありません。
-- ネットワークに出られない環境で使う場合は、CDN 上の `dict/` とスクリプトをダウンロードし、`dicPath` やスクリプト URL を差し替えるだけで対応できます。
+- `public/vendor/kuromoji/kuromoji.js` と `public/vendor/kuromoji/dict/` は `node_modules/kuromoji` からコピーした成果物です。**依存バージョンを更新した際は、必ず同じ手順で再コピーしてコミットしてください。**（例：`cp node_modules/kuromoji/build/kuromoji.js public/vendor/kuromoji/` / `cp -R node_modules/kuromoji/dict public/vendor/kuromoji/`）
+- こうすることで GitHub Pages / Netlify / Vercel などセルフホスト環境でも CDN 依存なしで動作します。
+- 必要に応じて `withBasePath()` の引数（`vendor/kuromoji/...`）を書き換えることで別パスへの配置にも対応できます。
 
 ## 形態素解析で取得できる属性
 
