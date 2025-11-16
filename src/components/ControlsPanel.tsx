@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 import { COLOR_SCHEMES } from '../constants/colors'
 import type { ViewMode, WordCloudSettings } from '../types'
 
@@ -41,9 +41,14 @@ export const ControlsPanel = ({
   onGenerate,
 }: ControlsPanelProps) => {
   const [isTextPanelOpen, setIsTextPanelOpen] = useState(true)
+  const [maxWordsInput, setMaxWordsInput] = useState(String(settings.maxWords))
   const rotationPresetId =
     ROTATION_PRESETS.find((preset) => arraysEqual(preset.angles, settings.rotationAngles))?.id ??
     'custom'
+
+  useEffect(() => {
+    setMaxWordsInput(String(settings.maxWords))
+  }, [settings.maxWords])
 
   const handleTextareaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     onTextChange(event.target.value)
@@ -66,6 +71,29 @@ export const ControlsPanel = ({
   const handleGenerateClick = () => {
     setIsTextPanelOpen(false)
     onGenerate()
+  }
+
+  const handleMaxWordsChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { value } = event.target
+    if (!/^\d*$/.test(value)) {
+      return
+    }
+    setMaxWordsInput(value)
+    if (!value) {
+      return
+    }
+    const numericValue = Number(value)
+    if (numericValue < 20 || numericValue > 400) {
+      return
+    }
+    onSettingsChange({ maxWords: numericValue })
+  }
+
+  const handleMaxWordsBlur = () => {
+    const numericValue = Number(maxWordsInput)
+    const nextValue = clamp(Number.isNaN(numericValue) ? settings.maxWords : numericValue, 20, 400)
+    setMaxWordsInput(String(nextValue))
+    onSettingsChange({ maxWords: nextValue })
   }
 
   return (
@@ -117,16 +145,13 @@ export const ControlsPanel = ({
           最大語数
         </label>
         <input
-          type="number"
+          type="text"
           id="max-words"
-          min={20}
-          max={400}
-          value={settings.maxWords}
-          onChange={(event) =>
-            onSettingsChange({
-              maxWords: clamp(Number(event.target.value) || 0, 20, 400),
-            })
-          }
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={maxWordsInput}
+          onChange={handleMaxWordsChange}
+          onBlur={handleMaxWordsBlur}
         />
 
         <label className="field-label">フォントサイズ</label>

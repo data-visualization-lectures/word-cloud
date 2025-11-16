@@ -24,6 +24,10 @@ function App() {
 
   const { tokenizer, loading: tokenizerLoading, error: tokenizerError } = useKuromojiTokenizer()
   const [viewMode, setViewMode] = useState<ViewMode>('cloud')
+  const [generatedInputs, setGeneratedInputs] = useState<{
+    text: string
+    stopwords: Set<string>
+  } | null>(null)
 
   const stopwordsSet = useMemo(() => {
     const parsed = parseStopwords(stopwordsText)
@@ -31,22 +35,33 @@ function App() {
   }, [stopwordsText])
 
   const wordFrequencies = useMemo(() => {
+    if (!generatedInputs) return []
     return computeWordFrequencies({
-      text,
+      text: generatedInputs.text,
       tokenizer,
-      stopwords: stopwordsSet,
+      stopwords: generatedInputs.stopwords,
       maxWords: settings.maxWords,
     })
-  }, [text, tokenizer, stopwordsSet, settings.maxWords])
+  }, [generatedInputs, tokenizer, settings.maxWords])
 
   const handleSettingsChange = (patch: Partial<WordCloudSettings>) => {
     setSettings((prev) => ({ ...prev, ...patch }))
   }
 
+  const handleGenerate = () => {
+    setGeneratedInputs({
+      text,
+      stopwords: new Set(stopwordsSet),
+    })
+  }
+
+  const shouldRender = Boolean(generatedInputs)
+
   const previewStatus = (() => {
     if (tokenizerError) return tokenizerError
     if (tokenizerLoading && !tokenizer) return '形態素解析辞書を読み込み中です...'
-    if (!text.trim()) return 'テキストを入力してください。'
+    if (!shouldRender) return '生成ボタンを押してください。'
+    if (!generatedInputs?.text.trim()) return 'テキストを入力してください。'
     if (!wordFrequencies.length) return '抽出できる単語が見つかりません。'
     return null
   })()
@@ -64,6 +79,7 @@ function App() {
           tokenCount={wordFrequencies.length}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          onGenerate={handleGenerate}
         />
         <WordCloudPreview
           words={wordFrequencies}
