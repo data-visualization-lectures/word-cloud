@@ -1,4 +1,4 @@
-import type { ChangeEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import { COLOR_SCHEMES } from '../constants/colors'
 import type { ViewMode, WordCloudSettings } from '../types'
 
@@ -12,6 +12,7 @@ interface ControlsPanelProps {
   tokenCount: number
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
+  onGenerate: () => void
 }
 
 const FONT_MIN_LIMIT = 10
@@ -37,7 +38,9 @@ export const ControlsPanel = ({
   tokenCount,
   viewMode,
   onViewModeChange,
+  onGenerate,
 }: ControlsPanelProps) => {
+  const [isTextPanelOpen, setIsTextPanelOpen] = useState(true)
   const rotationPresetId =
     ROTATION_PRESETS.find((preset) => arraysEqual(preset.angles, settings.rotationAngles))?.id ??
     'custom'
@@ -60,6 +63,11 @@ export const ControlsPanel = ({
     onSettingsChange({ fontSizeRange: nextRange })
   }
 
+  const handleGenerateClick = () => {
+    setIsTextPanelOpen(false)
+    onGenerate()
+  }
+
   return (
     <section className="controls-panel">
       <h1>Japanese Word Cloud</h1>
@@ -67,21 +75,41 @@ export const ControlsPanel = ({
         テキストを貼り付けて、SVGとして使える日本語ワードクラウドを生成します。
       </p>
 
-      <div className="form-section">
-        <label className="field-label" htmlFor="text-input">
-          テキスト入力
-        </label>
-        <textarea
-          id="text-input"
-          className="textarea"
-          value={text}
-          onChange={handleTextareaChange}
-          placeholder="文章を入力してください"
-          rows={10}
-        />
-        <div className="field-hint">
-          語数: <strong>{tokenCount}</strong>
+      <div className="form-section text-input-section">
+        <div className="field-label-row">
+          <label className="field-label" htmlFor="text-input">
+            テキスト入力
+          </label>
+          <button
+            type="button"
+            className="accordion-toggle"
+            aria-expanded={isTextPanelOpen}
+            aria-controls="text-accordion-panel"
+            onClick={() => setIsTextPanelOpen((prev) => !prev)}
+          >
+            {isTextPanelOpen ? 'ー' : '＋'}
+          </button>
         </div>
+        {isTextPanelOpen && (
+          <div id="text-accordion-panel" className="accordion-panel">
+            <textarea
+              id="text-input"
+              className="textarea"
+              value={text}
+              onChange={handleTextareaChange}
+              placeholder="文章を入力してください"
+              rows={10}
+            />
+            <div className="input-actions">
+              <p className="field-hint">
+                語数: <strong>{tokenCount}</strong>
+              </p>
+              <button type="button" className="generate-button" onClick={handleGenerateClick}>
+                生成する
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="form-grid">
