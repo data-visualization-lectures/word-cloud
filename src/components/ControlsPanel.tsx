@@ -13,6 +13,8 @@ interface ControlsPanelProps {
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
   onGenerate: () => void
+  showBoundingBoxes: boolean
+  onShowBoundingBoxesChange: (value: boolean) => void
 }
 
 const FONT_MIN_LIMIT = 10
@@ -39,6 +41,8 @@ export const ControlsPanel = ({
   viewMode,
   onViewModeChange,
   onGenerate,
+  showBoundingBoxes,
+  onShowBoundingBoxesChange,
 }: ControlsPanelProps) => {
   const [isTextPanelOpen, setIsTextPanelOpen] = useState(true)
   const [maxWordsInput, setMaxWordsInput] = useState(String(settings.maxWords))
@@ -199,6 +203,19 @@ export const ControlsPanel = ({
           <option value="cloud">Word Cloud</option>
           <option value="bubble">Word Bubble</option>
         </select>
+
+        <label className="field-label" htmlFor="debug-bounding-boxes">
+          デバッグ表示
+        </label>
+        <label className="checkbox-field">
+          <input
+            id="debug-bounding-boxes"
+            type="checkbox"
+            checked={showBoundingBoxes}
+            onChange={(event) => onShowBoundingBoxesChange(event.target.checked)}
+          />
+          バウンディングボックス
+        </label>
 
         <label className="field-label" htmlFor="spiral">
           レイアウト

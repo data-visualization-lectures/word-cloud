@@ -24,6 +24,7 @@ function App() {
 
   const { tokenizer, loading: tokenizerLoading, error: tokenizerError } = useKuromojiTokenizer()
   const [viewMode, setViewMode] = useState<ViewMode>('cloud')
+  const [showBoundingBoxes, setShowBoundingBoxes] = useState(false)
   const [generatedInputs, setGeneratedInputs] = useState<{
     text: string
     stopwords: Set<string>
@@ -80,12 +81,15 @@ function App() {
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           onGenerate={handleGenerate}
+          showBoundingBoxes={showBoundingBoxes}
+          onShowBoundingBoxesChange={setShowBoundingBoxes}
         />
         <WordCloudPreview
           words={wordFrequencies}
           settings={settings}
           statusMessage={previewStatus}
           viewMode={viewMode}
+          showBoundingBoxes={showBoundingBoxes}
         />
       </main>
     </div>

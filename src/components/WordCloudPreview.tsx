@@ -9,6 +9,7 @@ interface WordCloudPreviewProps {
   settings: WordCloudSettings
   statusMessage: string | null
   viewMode: ViewMode
+  showBoundingBoxes: boolean
 }
 
 const DEFAULT_RATIO = 5 / 3
@@ -18,6 +19,7 @@ export const WordCloudPreview = ({
   settings,
   statusMessage,
   viewMode,
+  showBoundingBoxes,
 }: WordCloudPreviewProps) => {
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
@@ -76,6 +78,7 @@ export const WordCloudPreview = ({
       .attr('transform', `translate(${dimensions.width / 2}, ${dimensions.height / 2})`)
 
     enter.append('circle').attr('r', 0).attr('opacity', 0)
+    enter.append('rect').attr('class', 'word-bbox')
     enter
       .append('text')
       .attr('text-anchor', 'middle')
@@ -97,12 +100,24 @@ export const WordCloudPreview = ({
       .attr('transform', (d: LayoutWord) => `rotate(${d.rotate})`)
 
     merged
+      .select<SVGRectElement>('rect')
+      .attr('width', (d: LayoutWord) => d.width ?? d.fontSize)
+      .attr('height', (d: LayoutWord) => d.height ?? d.fontSize)
+      .attr('x', (d: LayoutWord) => -((d.width ?? d.fontSize) / 2))
+      .attr('y', (d: LayoutWord) => -((d.height ?? d.fontSize) / 2))
+      .attr('fill', 'rgba(59, 130, 246, 0.12)')
+      .attr('stroke', '#3b82f6')
+      .attr('stroke-width', 0.8)
+      .attr('pointer-events', 'none')
+      .attr('opacity', showBoundingBoxes ? 0.8 : 0)
+
+    merged
       .select<SVGCircleElement>('circle')
       .transition(t)
       .attr('r', (d: LayoutWord) => (viewMode === 'bubble' ? d.radius : 0))
       .attr('fill', (d: LayoutWord) => d.color)
       .attr('opacity', viewMode === 'bubble' ? 0.15 : 0)
-  }, [layoutWords, viewMode, dimensions.height, dimensions.width])
+  }, [layoutWords, viewMode, dimensions.height, dimensions.width, showBoundingBoxes])
 
   const placeholderMessage = useMemo(() => {
     if (statusMessage) return statusMessage
