@@ -1,4 +1,5 @@
-import { defineConfig, type PluginOption } from 'vite'
+import { defineConfig, type PluginOption, type Connect } from 'vite'
+import type { IncomingMessage, ServerResponse } from 'http'
 import react from '@vitejs/plugin-react'
 
 const KUROMOJI_DICT_PATH = 'vendor/kuromoji/dict/'
@@ -6,8 +7,14 @@ const KUROMOJI_DICT_PATH = 'vendor/kuromoji/dict/'
 const createKuromojiPlugin = (): PluginOption => {
   let resolvedBase = '/'
 
-  const setHeaders = (server: { middlewares: { use: (handler: any) => void } }) => {
-    server.middlewares.use((req, res, next) => {
+  type MiddlewareHandler = (
+    req: IncomingMessage,
+    res: ServerResponse,
+    next: (err?: unknown) => void,
+  ) => void
+
+  const setHeaders = (server: { middlewares: Connect.Server }) => {
+    const middleware: MiddlewareHandler = (req, res, next) => {
       if (!req.url) {
         next()
         return
@@ -16,7 +23,9 @@ const createKuromojiPlugin = (): PluginOption => {
         res.setHeader('Content-Encoding', 'identity')
       }
       next()
-    })
+    }
+
+    server.middlewares.use(middleware)
   }
 
   return {

@@ -47,7 +47,7 @@
 
 .form-grid {
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: 0.5rem 0.75rem;
   align-items: center;
 }
@@ -106,9 +106,80 @@
   color: #64748b;
 }
 
+.input-with-slider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.input-with-slider input[type='number'] {
+  width: 80px;
+  text-align: right;
+}
+
+.input-with-slider .nouislider-control {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  margin: 0.1rem 0 0.6rem;
+}
+
+.input-with-slider .nouislider-control.noUi-target {
+  border: 1px solid #cbd5f5;
+  border-radius: 999px;
+  box-shadow: none;
+  height: 6px;
+  background: #e2e8f0;
+}
+
+.input-with-slider .nouislider-control .noUi-connects {
+  border-radius: 999px;
+}
+
+.input-with-slider .nouislider-control .noUi-connect {
+  background: linear-gradient(90deg, #0ea5e9, #2563eb);
+}
+
+.input-with-slider .nouislider-control .noUi-handle {
+  width: 20px;
+  height: 20px;
+  right: -10px;
+  top: -7px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25);
+  background: #2563eb;
+}
+
+.input-with-slider .nouislider-control .noUi-handle::before,
+.input-with-slider .nouislider-control .noUi-handle::after {
+  display: none;
+}
+
+.input-with-slider .nouislider-control .noUi-tooltip {
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.8rem;
+}
+
+.input-with-slider .nouislider-control .noUi-pips,
+.input-with-slider .nouislider-control .noUi-marker,
+.input-with-slider .nouislider-control .noUi-value {
+  display: none;
+}
+
+
 .field-hint {
   font-size: 0.85rem;
   color: #64748b;
+}
+
+.field-hint.error {
+  color: #dc2626;
 }
 
 .input-actions {
@@ -136,6 +207,11 @@
   padding: 0.55rem 0.75rem;
   font: inherit;
   background-color: #fff;
+}
+
+.form-grid .field-hint {
+  grid-column: 1 / -1;
+  margin: -0.1rem 0 0.35rem;
 }
 
 .controls-panel input:focus,

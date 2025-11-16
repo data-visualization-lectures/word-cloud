@@ -1,4 +1,5 @@
-import { useEffect, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import noUiSlider, { type API as NoUiSliderInstance, PipsMode } from 'nouislider'
 import { COLOR_SCHEMES } from '../constants/colors'
 import type { ViewMode, WordCloudSettings } from '../types'
 
@@ -19,6 +20,11 @@ interface ControlsPanelProps {
 
 const FONT_MIN_LIMIT = 10
 const FONT_MAX_LIMIT = 160
+const MAX_WORDS_MIN = 20
+const MAX_WORDS_MAX = 400
+const MAX_WORDS_STEP = 10
+const PADDING_MIN = 0
+const PADDING_MAX = 20
 const ROTATION_PRESETS = [
   { id: 'none', label: '回転なし', angles: [0] },
   { id: 'light', label: '軽め（-30°〜30°）', angles: [-30, -15, 0, 15, 30] },
@@ -46,12 +52,24 @@ export const ControlsPanel = ({
 }: ControlsPanelProps) => {
   const [isTextPanelOpen, setIsTextPanelOpen] = useState(true)
   const [maxWordsInput, setMaxWordsInput] = useState(String(settings.maxWords))
+  const [maxWordsError, setMaxWordsError] = useState<string | null>(null)
+  const maxWordsSliderRef = useRef<HTMLDivElement | null>(null)
+  const maxWordsSliderInstance = useRef<NoUiSliderInstance | null>(null)
+  const paddingSliderRef = useRef<HTMLDivElement | null>(null)
+  const paddingSliderInstance = useRef<NoUiSliderInstance | null>(null)
+  const fontSizeSliderRef = useRef<HTMLDivElement | null>(null)
+  const fontSizeSliderInstance = useRef<NoUiSliderInstance | null>(null)
+
   const rotationPresetId =
     ROTATION_PRESETS.find((preset) => arraysEqual(preset.angles, settings.rotationAngles))?.id ??
     'custom'
 
   useEffect(() => {
     setMaxWordsInput(String(settings.maxWords))
+    setMaxWordsError(null)
+    if (maxWordsSliderInstance.current) {
+      maxWordsSliderInstance.current.set(settings.maxWords)
+    }
   }, [settings.maxWords])
 
   const handleTextareaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -79,26 +97,158 @@ export const ControlsPanel = ({
 
   const handleMaxWordsChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target
-    if (!/^\d*$/.test(value)) {
-      return
-    }
     setMaxWordsInput(value)
     if (!value) {
+      setMaxWordsError('値を入力してください。')
       return
     }
     const numericValue = Number(value)
-    if (numericValue < 20 || numericValue > 400) {
+    if (Number.isNaN(numericValue)) {
+      setMaxWordsError('数値で入力してください。')
       return
     }
+    if (numericValue < MAX_WORDS_MIN || numericValue > MAX_WORDS_MAX) {
+      setMaxWordsError(`${MAX_WORDS_MIN}〜${MAX_WORDS_MAX}の範囲で入力してください。`)
+      return
+    }
+    setMaxWordsError(null)
     onSettingsChange({ maxWords: numericValue })
   }
 
   const handleMaxWordsBlur = () => {
+    if (!maxWordsInput) {
+      setMaxWordsInput(String(settings.maxWords))
+      setMaxWordsError(null)
+      return
+    }
     const numericValue = Number(maxWordsInput)
-    const nextValue = clamp(Number.isNaN(numericValue) ? settings.maxWords : numericValue, 20, 400)
+    const nextValue = clamp(
+      Number.isNaN(numericValue) ? settings.maxWords : numericValue,
+      MAX_WORDS_MIN,
+      MAX_WORDS_MAX,
+    )
     setMaxWordsInput(String(nextValue))
+    setMaxWordsError(null)
     onSettingsChange({ maxWords: nextValue })
   }
+
+  const initializeMaxWordsSlider = () => {
+    if (!maxWordsSliderRef.current || maxWordsSliderInstance.current) return
+    maxWordsSliderInstance.current = noUiSlider.create(maxWordsSliderRef.current, {
+      start: settings.maxWords,
+      range: { min: MAX_WORDS_MIN, max: MAX_WORDS_MAX },
+      step: MAX_WORDS_STEP,
+      connect: [true, false],
+      tooltips: false,
+      format: {
+        to: (value: number) => Math.round(value).toString(),
+        from: Number,
+      },
+      pips: { mode: PipsMode.Range, density: 3 },
+    })
+    maxWordsSliderInstance.current.on('slide', (values) => {
+      const numericValue = Math.round(Number(values[0]))
+      if (Number.isNaN(numericValue) || numericValue === settings.maxWords) return
+      setMaxWordsInput(String(numericValue))
+      setMaxWordsError(null)
+      onSettingsChange({ maxWords: numericValue })
+    })
+  }
+
+  useEffect(() => {
+    initializeMaxWordsSlider()
+    return () => {
+      maxWordsSliderInstance.current?.destroy()
+      maxWordsSliderInstance.current = null
+    }
+  }, [])
+
+  const initializePaddingSlider = () => {
+    if (!paddingSliderRef.current || paddingSliderInstance.current) return
+    paddingSliderInstance.current = noUiSlider.create(paddingSliderRef.current, {
+      start: settings.padding,
+      range: { min: PADDING_MIN, max: PADDING_MAX },
+      step: 1,
+      connect: [true, false],
+      tooltips: false,
+      format: {
+        to: (value: number) => Math.round(value).toString(),
+        from: Number,
+      },
+      pips: { mode: PipsMode.Values, values: [0, 5, 10, 15, 20], density: 4 },
+    })
+    paddingSliderInstance.current.on('slide', (values) => {
+      const numericValue = Math.round(Number(values[0]))
+      if (Number.isNaN(numericValue) || numericValue === settings.padding) return
+      onSettingsChange({ padding: clamp(numericValue, PADDING_MIN, PADDING_MAX) })
+    })
+  }
+
+  useEffect(() => {
+    initializePaddingSlider()
+    return () => {
+      paddingSliderInstance.current?.destroy()
+      paddingSliderInstance.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    if (paddingSliderInstance.current) {
+      paddingSliderInstance.current.set(settings.padding)
+    }
+  }, [settings.padding])
+
+  const handlePaddingInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const numericValue = Number(event.target.value)
+    const safeValue = Number.isNaN(numericValue)
+      ? settings.padding
+      : clamp(numericValue, PADDING_MIN, PADDING_MAX)
+    onSettingsChange({ padding: safeValue })
+  }
+
+  const initializeFontSizeSlider = () => {
+    if (!fontSizeSliderRef.current || fontSizeSliderInstance.current) return
+    fontSizeSliderInstance.current = noUiSlider.create(fontSizeSliderRef.current, {
+      start: settings.fontSizeRange,
+      range: { min: FONT_MIN_LIMIT, max: FONT_MAX_LIMIT },
+      margin: 4,
+      step: 1,
+      connect: [false, true, false],
+      behaviour: 'drag',
+      tooltips: false,
+      format: {
+        to: (value: number) => Math.round(value).toString(),
+        from: Number,
+      },
+      pips: { mode: PipsMode.Range, density: 4 },
+    })
+    fontSizeSliderInstance.current.on('slide', (values) => {
+      const [minValue, maxValue] = values.map((value) => Math.round(Number(value)))
+      if (
+        Number.isNaN(minValue) ||
+        Number.isNaN(maxValue) ||
+        (minValue === settings.fontSizeRange[0] && maxValue === settings.fontSizeRange[1])
+      ) {
+        return
+      }
+      onSettingsChange({ fontSizeRange: [minValue, maxValue] })
+    })
+  }
+
+  useEffect(() => {
+    initializeFontSizeSlider()
+    return () => {
+      fontSizeSliderInstance.current?.destroy()
+      fontSizeSliderInstance.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    if (fontSizeSliderInstance.current) {
+      const [minSize, maxSize] = settings.fontSizeRange
+      fontSizeSliderInstance.current.set([minSize, maxSize])
+    }
+  }, [settings.fontSizeRange])
 
   return (
     <section className="controls-panel">
@@ -148,34 +298,46 @@ export const ControlsPanel = ({
         <label className="field-label" htmlFor="max-words">
           最大語数
         </label>
-        <input
-          type="text"
-          id="max-words"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={maxWordsInput}
-          onChange={handleMaxWordsChange}
-          onBlur={handleMaxWordsBlur}
-        />
+        <div className="input-with-slider">
+          <div className="nouislider-control" ref={maxWordsSliderRef} />
+          <input
+            type="number"
+            id="max-words"
+            min={MAX_WORDS_MIN}
+            max={MAX_WORDS_MAX}
+            value={maxWordsInput}
+            onChange={handleMaxWordsChange}
+            onBlur={handleMaxWordsBlur}
+          />
+        </div>
+        <p className={`field-hint ${maxWordsError ? 'error' : ''}`}>
+          {maxWordsError ?? `${MAX_WORDS_MIN}〜${MAX_WORDS_MAX}語の範囲で調整できます（${MAX_WORDS_STEP}語刻み）。`}
+        </p>
 
         <label className="field-label">フォントサイズ</label>
+        <div className="input-with-slider">
+          <div className="nouislider-control" ref={fontSizeSliderRef} />
+        </div>
         <div className="range-inputs">
           <input
             type="number"
             min={FONT_MIN_LIMIT}
-            max={FONT_MAX_LIMIT}
+            max={Math.max(FONT_MIN_LIMIT, settings.fontSizeRange[1] - 4)}
             value={settings.fontSizeRange[0]}
             onChange={(event) => handleFontSizeChange(0, Number(event.target.value))}
           />
           <span className="range-separator">〜</span>
           <input
             type="number"
-            min={FONT_MIN_LIMIT}
+            min={Math.min(FONT_MAX_LIMIT, settings.fontSizeRange[0] + 4)}
             max={FONT_MAX_LIMIT}
             value={settings.fontSizeRange[1]}
             onChange={(event) => handleFontSizeChange(1, Number(event.target.value))}
           />
         </div>
+        <p className="field-hint">
+          {FONT_MIN_LIMIT}〜{FONT_MAX_LIMIT}pt のあいだで、最小と最大は 4pt 以上離す必要があります。
+        </p>
 
         <label className="field-label" htmlFor="color-scheme">
           カラースキーム
@@ -254,16 +416,20 @@ export const ControlsPanel = ({
         <label className="field-label" htmlFor="padding">
           単語間隔
         </label>
-        <input
-          type="number"
-          id="padding"
-          min={0}
-          max={20}
-          value={settings.padding}
-          onChange={(event) =>
-            onSettingsChange({ padding: clamp(Number(event.target.value) || 0, 0, 20) })
-          }
-        />
+        <div className="input-with-slider">
+          <div className="nouislider-control" ref={paddingSliderRef} />
+          <input
+            type="number"
+            id="padding"
+            min={PADDING_MIN}
+            max={PADDING_MAX}
+            value={settings.padding}
+            onChange={handlePaddingInputChange}
+          />
+        </div>
+        <p className="field-hint">
+          {PADDING_MIN}〜{PADDING_MAX}px の範囲でスライダーまたは直接入力できます。
+        </p>
       </div>
 
       <div className="form-section">
