@@ -9,6 +9,7 @@
 - `public/vendor/kuromoji/kuromoji.js` と `public/vendor/kuromoji/dict/` は `node_modules/kuromoji` からコピーした成果物です。**依存バージョンを更新した際は、必ず同じ手順で再コピーしてコミットしてください。**（例：`cp node_modules/kuromoji/build/kuromoji.js public/vendor/kuromoji/` / `cp -R node_modules/kuromoji/dict public/vendor/kuromoji/`）
 - こうすることで GitHub Pages / Netlify / Vercel などセルフホスト環境でも CDN 依存なしで動作します。
 - 必要に応じて `withBasePath()` の引数（`vendor/kuromoji/...`）を書き換えることで別パスへの配置にも対応できます。
+- Vite の dev/preview サーバーは `.gz` 辞書をそのまま配信するために `vite.config.ts` のカスタムプラグインで `Content-Encoding: identity` を設定しています。通常の静的ホスティングでも追加設定なしで同じ挙動になります。
 
 ## 形態素解析で取得できる属性
 
