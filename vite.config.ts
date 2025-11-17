@@ -40,5 +40,9 @@ const createKuromojiPlugin = (): PluginOption => {
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/word-cloud/',
+  build: {
+    outDir: 'docs',
+  },
   plugins: [react(), createKuromojiPlugin()],
 })
