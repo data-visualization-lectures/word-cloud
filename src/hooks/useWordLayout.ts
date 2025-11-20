@@ -168,6 +168,13 @@ export const useWordLayout = (
     return [min, max]
   }, [words])
 
+  const fontSizeRange = useMemo(
+    () => settings.fontSizeRange,
+    [settings.fontSizeRange[0], settings.fontSizeRange[1]],
+  )
+
+  const rotationAngles = useMemo(() => settings.rotationAngles, [settings.rotationAngles.join(',')])
+
   useEffect(() => {
     if (!width || !height || !words.length) {
       setLayoutWords([])
@@ -231,8 +238,7 @@ export const useWordLayout = (
     }
 
     let isCancelled = false
-    const rotationAngles =
-      settings.rotationAngles.length > 0 ? settings.rotationAngles : ([0] as number[])
+    const effectiveRotationAngles = rotationAngles.length > 0 ? rotationAngles : ([0] as number[])
 
     const createLayout = () => cloud<CloudWord>()
     type CloudLayoutInstance = ReturnType<typeof createLayout>
@@ -248,8 +254,8 @@ export const useWordLayout = (
         .words(words.map((word) => ({ ...word })))
         .padding(settings.padding)
         .rotate(() => {
-          const index = Math.floor(Math.random() * rotationAngles.length)
-          const baseAngle = rotationAngles[index]
+          const index = Math.floor(Math.random() * effectiveRotationAngles.length)
+          const baseAngle = effectiveRotationAngles[index]
           if (!baseAngle) return 0
           const sign = Math.random() < 0.5 ? -1 : 1
           return baseAngle * sign
@@ -303,13 +309,25 @@ export const useWordLayout = (
       layout.start()
     }
 
-    attemptLayout(settings.fontSizeRange)
+    attemptLayout(fontSizeRange)
 
     return () => {
       isCancelled = true
       layoutInstances.forEach((instance) => instance.stop())
     }
-  }, [words, width, height, settings, minValue, maxValue, mode])
+  }, [
+    words,
+    width,
+    height,
+    fontSizeRange,
+    settings.padding,
+    settings.spiral,
+    rotationAngles,
+    settings.colorSchemeId,
+    minValue,
+    maxValue,
+    mode,
+  ])
 
   return { layoutWords, isCalculating }
 }

@@ -148,9 +148,13 @@ export const ControlsPanel = ({
     })
     maxWordsSliderInstance.current.on('slide', (values) => {
       const numericValue = Math.round(Number(values[0]))
-      if (Number.isNaN(numericValue) || numericValue === settings.maxWords) return
+      if (Number.isNaN(numericValue)) return
       setMaxWordsInput(String(numericValue))
       setMaxWordsError(null)
+    })
+    maxWordsSliderInstance.current.on('change', (values) => {
+      const numericValue = Math.round(Number(values[0]))
+      if (Number.isNaN(numericValue) || numericValue === settings.maxWords) return
       onSettingsChange({ maxWords: numericValue })
     })
   }
@@ -177,7 +181,7 @@ export const ControlsPanel = ({
       },
       pips: { mode: PipsMode.Values, values: [0, 5, 10, 15, 20], density: 4 },
     })
-    paddingSliderInstance.current.on('slide', (values) => {
+    paddingSliderInstance.current.on('change', (values) => {
       const numericValue = Math.round(Number(values[0]))
       if (Number.isNaN(numericValue) || numericValue === settings.padding) return
       onSettingsChange({ padding: clamp(numericValue, PADDING_MIN, PADDING_MAX) })
@@ -222,7 +226,7 @@ export const ControlsPanel = ({
       },
       pips: { mode: PipsMode.Range, density: 4 },
     })
-    fontSizeSliderInstance.current.on('slide', (values) => {
+    fontSizeSliderInstance.current.on('change', (values) => {
       const [minValue, maxValue] = values.map((value) => Math.round(Number(value)))
       if (
         Number.isNaN(minValue) ||
