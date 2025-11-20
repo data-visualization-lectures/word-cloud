@@ -3,6 +3,8 @@ import { select } from 'd3-selection'
 import { transition } from 'd3-transition'
 import type { ViewMode, WordCloudSettings, WordFrequency } from '../types'
 import { useWordLayout, type LayoutWord } from '../hooks/useWordLayout'
+import { ASPECT_RATIOS } from '../constants/aspectRatios'
+
 
 interface WordCloudPreviewProps {
   words: WordFrequency[]
@@ -11,8 +13,6 @@ interface WordCloudPreviewProps {
   viewMode: ViewMode
   showBoundingBoxes: boolean
 }
-
-const DEFAULT_RATIO = 5 / 3
 
 export const WordCloudPreview = ({
   words,
@@ -25,6 +25,11 @@ export const WordCloudPreview = ({
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
 
+  const aspectRatio = useMemo(() => {
+    const config = ASPECT_RATIOS.find((r) => r.id === settings.aspectRatio)
+    return config?.ratio ?? 16 / 9
+  }, [settings.aspectRatio])
+
   useEffect(() => {
     if (!wrapperRef.current) return
     const element = wrapperRef.current
@@ -33,7 +38,7 @@ export const WordCloudPreview = ({
         if (entry.target !== element) continue
         const { width } = entry.contentRect
         const nextWidth = Math.floor(width)
-        const nextHeight = Math.floor(width / DEFAULT_RATIO)
+        const nextHeight = Math.floor(width / aspectRatio)
 
         setDimensions((prev) => {
           if (prev.width === nextWidth && prev.height === nextHeight) {
@@ -46,7 +51,7 @@ export const WordCloudPreview = ({
 
     observer.observe(element)
     return () => observer.disconnect()
-  }, [])
+  }, [aspectRatio])
 
   const { layoutWords, isCalculating } = useWordLayout(
     words,
@@ -203,7 +208,14 @@ export const WordCloudPreview = ({
         </div>
       </header>
 
-      <div className="preview-canvas-wrapper" ref={wrapperRef}>
+      <div
+        className="preview-canvas-wrapper"
+        ref={wrapperRef}
+        style={{
+          aspectRatio: `${aspectRatio}`,
+          height: 'auto', // Let aspect-ratio control the height
+        }}
+      >
         <svg
           ref={svgRef}
           className="preview-canvas"
