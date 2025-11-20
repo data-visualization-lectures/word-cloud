@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import noUiSlider, { type API as NoUiSliderInstance, PipsMode } from 'nouislider'
-import { COLOR_SCHEMES } from '../constants/colors'
 import type { WordCloudSettings } from '../types'
 
 interface ControlsPanelProps {
@@ -418,36 +417,6 @@ export const ControlsPanel = ({
               <p className="field-hint">
                 {FONT_MIN_LIMIT}〜{FONT_MAX_LIMIT}pt のあいだで、最小と最大は 4pt 以上離す必要があります。
               </p>
-
-              <label className="field-label" htmlFor="color-scheme">
-                カラースキーム
-              </label>
-              <select
-                id="color-scheme"
-                value={settings.colorSchemeId}
-                onChange={(event) => onSettingsChange({ colorSchemeId: event.target.value })}
-              >
-                {COLOR_SCHEMES.map((scheme) => (
-                  <option key={scheme.id} value={scheme.id}>
-                    {scheme.label}
-                  </option>
-                ))}
-              </select>
-
-              <label className="field-label" htmlFor="color-rule">
-                色分けルール
-              </label>
-              <select
-                id="color-rule"
-                value={settings.colorRule}
-                onChange={(event) =>
-                  onSettingsChange({ colorRule: event.target.value as WordCloudSettings['colorRule'] })
-                }
-              >
-                <option value="scheme">カラースキーム</option>
-                <option value="pos">品詞ベース</option>
-                <option value="frequency">頻度ベース</option>
-              </select>
 
 
               <label className="field-label" htmlFor="debug-bounding-boxes">

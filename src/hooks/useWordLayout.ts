@@ -407,12 +407,44 @@ export const useWordLayout = (
     settings.padding,
     settings.spiral,
     rotationAngles,
-    settings.colorSchemeId,
-    settings.colorRule,
     minValue,
     maxValue,
     mode,
   ])
+
+  // Update colors when color scheme or color rule changes (without re-layout)
+  useEffect(() => {
+    if (!layoutWords.length) return
+
+    let colorScale: (word: WordFrequency) => string
+
+    if (settings.colorRule === 'pos') {
+      const posColors: Record<string, string> = {
+        '名詞': '#3b82f6',
+        '動詞': '#ef4444',
+        '形容詞': '#10b981',
+        '副詞': '#f59e0b',
+      }
+      colorScale = (word) => posColors[word.pos ?? '名詞'] ?? '#6b7280'
+    } else if (settings.colorRule === 'frequency') {
+      const frequencyColorScale = scaleLinear<string>()
+        .domain([minValue, maxValue])
+        .range(['#93c5fd', '#1e40af'])
+      colorScale = (word) => frequencyColorScale(word.value)
+    } else {
+      const schemeColorScale = scaleOrdinal<string, string>()
+        .domain(words.map((word) => word.text))
+        .range(getColorScheme(settings.colorSchemeId).colors)
+      colorScale = (word) => schemeColorScale(word.text)
+    }
+
+    setLayoutWords((prevWords) =>
+      prevWords.map((word) => ({
+        ...word,
+        color: colorScale({ text: word.text, value: word.value, pos: word.pos }),
+      })),
+    )
+  }, [settings.colorSchemeId, settings.colorRule, words, minValue, maxValue])
 
   return { layoutWords, isCalculating }
 }

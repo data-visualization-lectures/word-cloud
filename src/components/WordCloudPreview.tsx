@@ -4,6 +4,7 @@ import { transition } from 'd3-transition'
 import type { ViewMode, WordCloudSettings, WordFrequency, AspectRatio } from '../types'
 import { useWordLayout, type LayoutWord } from '../hooks/useWordLayout'
 import { ASPECT_RATIOS } from '../constants/aspectRatios'
+import { COLOR_SCHEMES } from '../constants/colors'
 
 
 interface WordCloudPreviewProps {
@@ -14,6 +15,8 @@ interface WordCloudPreviewProps {
   showBoundingBoxes: boolean
   onAspectRatioChange: (ratio: AspectRatio) => void
   onViewModeChange: (mode: ViewMode) => void
+  onColorSchemeChange: (schemeId: string) => void
+  onColorRuleChange: (rule: WordCloudSettings['colorRule']) => void
 }
 
 export const WordCloudPreview = ({
@@ -24,6 +27,8 @@ export const WordCloudPreview = ({
   showBoundingBoxes,
   onAspectRatioChange,
   onViewModeChange,
+  onColorSchemeChange,
+  onColorRuleChange,
 }: WordCloudPreviewProps) => {
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
@@ -215,12 +220,9 @@ export const WordCloudPreview = ({
   return (
     <section className="preview-panel">
       <header className="preview-header">
-        <div>
-          <h2>プレビュー</h2>
-          <p className="preview-meta">
-            表示語数: <strong>{layoutWords.length}</strong>
-          </p>
-        </div>
+        <p className="preview-meta">
+          表示語数: <strong>{layoutWords.length}</strong>
+        </p>
         <div className="download-buttons">
           <select
             className="view-mode-select"
@@ -229,6 +231,26 @@ export const WordCloudPreview = ({
           >
             <option value="cloud">Word Cloud</option>
             <option value="bubble">Word Bubble</option>
+          </select>
+          <select
+            className="color-scheme-select"
+            value={settings.colorSchemeId}
+            onChange={(e) => onColorSchemeChange(e.target.value)}
+          >
+            {COLOR_SCHEMES.map((scheme) => (
+              <option key={scheme.id} value={scheme.id}>
+                {scheme.label}
+              </option>
+            ))}
+          </select>
+          <select
+            className="color-rule-select"
+            value={settings.colorRule}
+            onChange={(e) => onColorRuleChange(e.target.value as WordCloudSettings['colorRule'])}
+          >
+            <option value="frequency">頻度ベース</option>
+            <option value="pos">品詞ベース</option>
+            <option value="scheme">単語ベース</option>
           </select>
           <select
             className="aspect-ratio-select"
@@ -242,13 +264,13 @@ export const WordCloudPreview = ({
             ))}
           </select>
           <button type="button" onClick={handleDownloadSvg} disabled={!layoutWords.length}>
-            SVGダウンロード
+            SVG
           </button>
           <button type="button" onClick={handleDownloadPng} disabled={!layoutWords.length}>
-            PNGダウンロード
+            PNG
           </button>
           <button type="button" onClick={handleDownloadCsv} disabled={!words.length}>
-            CSVダウンロード
+            CSV
           </button>
         </div>
       </header>

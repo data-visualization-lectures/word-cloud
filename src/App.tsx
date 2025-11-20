@@ -20,7 +20,7 @@ function App() {
     padding: 2,
     rotationAngles: [0],
     colorSchemeId: DEFAULT_COLOR_SCHEME_ID,
-    colorRule: 'scheme',
+    colorRule: 'frequency',
     aspectRatio: 'landscape',
   })
 
@@ -92,6 +92,8 @@ function App() {
           showBoundingBoxes={showBoundingBoxes}
           onAspectRatioChange={(ratio) => handleSettingsChange({ aspectRatio: ratio })}
           onViewModeChange={setViewMode}
+          onColorSchemeChange={(schemeId) => handleSettingsChange({ colorSchemeId: schemeId })}
+          onColorRuleChange={(rule) => handleSettingsChange({ colorRule: rule })}
         />
       </main>
     </div>

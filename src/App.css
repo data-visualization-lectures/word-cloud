@@ -329,7 +329,9 @@ svg {
 }
 
 .view-mode-select,
-.aspect-ratio-select {
+.aspect-ratio-select,
+.color-scheme-select,
+.color-rule-select {
   border: 1px solid #cbd5f5;
   border-radius: 12px;
   padding: 0.55rem 0.75rem;
@@ -339,7 +341,9 @@ svg {
 }
 
 .view-mode-select:focus,
-.aspect-ratio-select:focus {
+.aspect-ratio-select:focus,
+.color-scheme-select:focus,
+.color-rule-select:focus {
   outline: 2px solid #6366f1;
   border-color: #6366f1;
 }
