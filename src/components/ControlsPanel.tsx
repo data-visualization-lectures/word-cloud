@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import noUiSlider, { type API as NoUiSliderInstance, PipsMode } from 'nouislider'
 import { ASPECT_RATIOS } from '../constants/aspectRatios'
 import { COLOR_SCHEMES } from '../constants/colors'
-import { ASPECT_RATIOS } from '../constants/aspectRatios'
-import type { ViewMode, WordCloudSettings, AspectRatio } from '../types'
+import type { ViewMode, WordCloudSettings } from '../types'
 
 interface ControlsPanelProps {
   text: string
@@ -402,20 +401,7 @@ export const ControlsPanel = ({
           バウンディングボックス
         </label>
 
-        <label className="field-label" htmlFor="aspect-ratio">
-          アスペクト比
-        </label>
-        <select
-          id="aspect-ratio"
-          value={settings.aspectRatio}
-          onChange={(event) => onSettingsChange({ aspectRatio: event.target.value as AspectRatio })}
-        >
-          {ASPECT_RATIOS.map((ratio) => (
-            <option key={ratio.id} value={ratio.id}>
-              {ratio.label}
-            </option>
-          ))}
-        </select>
+
 
         <label className="field-label" htmlFor="spiral">
           レイアウト
