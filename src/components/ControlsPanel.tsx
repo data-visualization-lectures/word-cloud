@@ -48,6 +48,7 @@ export const ControlsPanel = ({
 }: ControlsPanelProps) => {
   const [isTextPanelOpen, setIsTextPanelOpen] = useState(true)
   const [isStopwordsPanelOpen, setIsStopwordsPanelOpen] = useState(false)
+  const [isAdvancedSettingsOpen, setIsAdvancedSettingsOpen] = useState(false)
   const [maxWordsInput, setMaxWordsInput] = useState(String(settings.maxWords))
   const [maxWordsError, setMaxWordsError] = useState<string | null>(null)
   const maxWordsSliderRef = useRef<HTMLDivElement | null>(null)
@@ -108,6 +109,7 @@ export const ControlsPanel = ({
 
   const handleGenerateClick = () => {
     setIsTextPanelOpen(false)
+    setIsAdvancedSettingsOpen(true)
     onGenerate()
   }
 
@@ -355,133 +357,153 @@ export const ControlsPanel = ({
         )}
       </div>
 
-      <div className="form-grid">
-        <label className="field-label" htmlFor="max-words">
-          最大語数
-        </label>
-        <div className="input-with-slider">
-          <div className="nouislider-control" ref={maxWordsSliderRef} />
-          <input
-            type="number"
-            id="max-words"
-            min={MAX_WORDS_MIN}
-            max={MAX_WORDS_MAX}
-            value={maxWordsInput}
-            onChange={handleMaxWordsChange}
-            onBlur={handleMaxWordsBlur}
-          />
+      <div className="form-section">
+        <div className="field-label-row">
+          <label className="field-label">
+            詳細設定
+          </label>
+          <button
+            type="button"
+            className="accordion-toggle"
+            aria-expanded={isAdvancedSettingsOpen}
+            aria-controls="advanced-settings-panel"
+            onClick={() => setIsAdvancedSettingsOpen((prev) => !prev)}
+          >
+            {isAdvancedSettingsOpen ? 'ー' : '＋'}
+          </button>
         </div>
-        <p className={`field-hint ${maxWordsError ? 'error' : ''}`}>
-          {maxWordsError ?? `${MAX_WORDS_MIN}〜${MAX_WORDS_MAX}語の範囲で調整できます（${MAX_WORDS_STEP}語刻み）。`}
-        </p>
+        {isAdvancedSettingsOpen && (
+          <div id="advanced-settings-panel" className="accordion-panel">
+            <div className="form-grid">
+              <label className="field-label" htmlFor="max-words">
+                最大語数
+              </label>
+              <div className="input-with-slider">
+                <div className="nouislider-control" ref={maxWordsSliderRef} />
+                <input
+                  type="number"
+                  id="max-words"
+                  min={MAX_WORDS_MIN}
+                  max={MAX_WORDS_MAX}
+                  value={maxWordsInput}
+                  onChange={handleMaxWordsChange}
+                  onBlur={handleMaxWordsBlur}
+                />
+              </div>
+              <p className={`field-hint ${maxWordsError ? 'error' : ''}`}>
+                {maxWordsError ?? `${MAX_WORDS_MIN}〜${MAX_WORDS_MAX}語の範囲で調整できます（${MAX_WORDS_STEP}語刻み）。`}
+              </p>
 
-        <label className="field-label">フォントサイズ</label>
-        <div className="input-with-slider">
-          <div className="nouislider-control" ref={fontSizeSliderRef} />
-        </div>
-        <div className="range-inputs">
-          <input
-            type="number"
-            min={FONT_MIN_LIMIT}
-            max={Math.max(FONT_MIN_LIMIT, settings.fontSizeRange[1] - 4)}
-            value={settings.fontSizeRange[0]}
-            onChange={(event) => handleFontSizeChange(0, Number(event.target.value))}
-          />
-          <span className="range-separator">〜</span>
-          <input
-            type="number"
-            min={Math.min(FONT_MAX_LIMIT, settings.fontSizeRange[0] + 4)}
-            max={FONT_MAX_LIMIT}
-            value={settings.fontSizeRange[1]}
-            onChange={(event) => handleFontSizeChange(1, Number(event.target.value))}
-          />
-        </div>
-        <p className="field-hint">
-          {FONT_MIN_LIMIT}〜{FONT_MAX_LIMIT}pt のあいだで、最小と最大は 4pt 以上離す必要があります。
-        </p>
+              <label className="field-label">フォントサイズ</label>
+              <div className="input-with-slider">
+                <div className="nouislider-control" ref={fontSizeSliderRef} />
+              </div>
+              <div className="range-inputs">
+                <input
+                  type="number"
+                  min={FONT_MIN_LIMIT}
+                  max={Math.max(FONT_MIN_LIMIT, settings.fontSizeRange[1] - 4)}
+                  value={settings.fontSizeRange[0]}
+                  onChange={(event) => handleFontSizeChange(0, Number(event.target.value))}
+                />
+                <span className="range-separator">〜</span>
+                <input
+                  type="number"
+                  min={Math.min(FONT_MAX_LIMIT, settings.fontSizeRange[0] + 4)}
+                  max={FONT_MAX_LIMIT}
+                  value={settings.fontSizeRange[1]}
+                  onChange={(event) => handleFontSizeChange(1, Number(event.target.value))}
+                />
+              </div>
+              <p className="field-hint">
+                {FONT_MIN_LIMIT}〜{FONT_MAX_LIMIT}pt のあいだで、最小と最大は 4pt 以上離す必要があります。
+              </p>
 
-        <label className="field-label" htmlFor="color-scheme">
-          カラースキーム
-        </label>
-        <select
-          id="color-scheme"
-          value={settings.colorSchemeId}
-          onChange={(event) => onSettingsChange({ colorSchemeId: event.target.value })}
-        >
-          {COLOR_SCHEMES.map((scheme) => (
-            <option key={scheme.id} value={scheme.id}>
-              {scheme.label}
-            </option>
-          ))}
-        </select>
-
-
-        <label className="field-label" htmlFor="debug-bounding-boxes">
-          デバッグ表示
-        </label>
-        <label className="checkbox-field">
-          <input
-            id="debug-bounding-boxes"
-            type="checkbox"
-            checked={showBoundingBoxes}
-            onChange={(event) => onShowBoundingBoxesChange(event.target.checked)}
-          />
-          バウンディングボックス
-        </label>
+              <label className="field-label" htmlFor="color-scheme">
+                カラースキーム
+              </label>
+              <select
+                id="color-scheme"
+                value={settings.colorSchemeId}
+                onChange={(event) => onSettingsChange({ colorSchemeId: event.target.value })}
+              >
+                {COLOR_SCHEMES.map((scheme) => (
+                  <option key={scheme.id} value={scheme.id}>
+                    {scheme.label}
+                  </option>
+                ))}
+              </select>
 
 
+              <label className="field-label" htmlFor="debug-bounding-boxes">
+                デバッグ表示
+              </label>
+              <label className="checkbox-field">
+                <input
+                  id="debug-bounding-boxes"
+                  type="checkbox"
+                  checked={showBoundingBoxes}
+                  onChange={(event) => onShowBoundingBoxesChange(event.target.checked)}
+                />
+                バウンディングボックス
+              </label>
 
-        <label className="field-label" htmlFor="spiral">
-          レイアウト
-        </label>
-        <select
-          id="spiral"
-          value={settings.spiral}
-          onChange={(event) =>
-            onSettingsChange({ spiral: event.target.value as WordCloudSettings['spiral'] })
-          }
-        >
-          <option value="archimedean">アーキメディアン</option>
-          <option value="rectangular">矩形</option>
-        </select>
 
-        <label className="field-label" htmlFor="rotation">
-          回転
-        </label>
-        <select
-          id="rotation"
-          value={rotationPresetId}
-          onChange={(event) => {
-            const preset = ROTATION_PRESETS.find(({ id }) => id === event.target.value)
-            if (preset) {
-              onSettingsChange({ rotationAngles: preset.angles })
-            }
-          }}
-        >
-          {ROTATION_PRESETS.map((preset) => (
-            <option key={preset.id} value={preset.id}>
-              {preset.label}
-            </option>
-          ))}
-        </select>
 
-        <label className="field-label" htmlFor="padding">
-          単語間隔
-        </label>
-        <div className="input-with-slider">
-          <div className="nouislider-control" ref={paddingSliderRef} />
-          <input
-            type="number"
-            id="padding"
-            min={PADDING_MIN}
-            max={PADDING_MAX}
-            value={settings.padding}
-            onChange={handlePaddingInputChange}
-          />
-        </div>
-        <p className="field-hint">
-          {PADDING_MIN}〜{PADDING_MAX}px の範囲でスライダーまたは直接入力できます。
-        </p>
+              <label className="field-label" htmlFor="spiral">
+                レイアウト
+              </label>
+              <select
+                id="spiral"
+                value={settings.spiral}
+                onChange={(event) =>
+                  onSettingsChange({ spiral: event.target.value as WordCloudSettings['spiral'] })
+                }
+              >
+                <option value="archimedean">アーキメディアン</option>
+                <option value="rectangular">矩形</option>
+              </select>
+
+              <label className="field-label" htmlFor="rotation">
+                回転
+              </label>
+              <select
+                id="rotation"
+                value={rotationPresetId}
+                onChange={(event) => {
+                  const preset = ROTATION_PRESETS.find(({ id }) => id === event.target.value)
+                  if (preset) {
+                    onSettingsChange({ rotationAngles: preset.angles })
+                  }
+                }}
+              >
+                {ROTATION_PRESETS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.label}
+                  </option>
+                ))}
+              </select>
+
+              <label className="field-label" htmlFor="padding">
+                単語間隔
+              </label>
+              <div className="input-with-slider">
+                <div className="nouislider-control" ref={paddingSliderRef} />
+                <input
+                  type="number"
+                  id="padding"
+                  min={PADDING_MIN}
+                  max={PADDING_MAX}
+                  value={settings.padding}
+                  onChange={handlePaddingInputChange}
+                />
+              </div>
+              <p className="field-hint">
+                {PADDING_MIN}〜{PADDING_MAX}px の範囲でスライダーまたは直接入力できます。
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
 
