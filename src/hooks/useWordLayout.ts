@@ -187,26 +187,28 @@ export const useWordLayout = (
     // Create color scale based on color rule
     let colorScale: (word: WordFrequency) => string
 
+    const schemeColors = getColorScheme(settings.colorSchemeId).colors
+
     if (settings.colorRule === 'pos') {
       // POS-based coloring
       const posColors: Record<string, string> = {
-        '名詞': '#3b82f6', // blue
-        '動詞': '#ef4444', // red
-        '形容詞': '#10b981', // green
-        '副詞': '#f59e0b', // amber
+        '名詞': schemeColors[0],
+        '動詞': schemeColors[1] ?? schemeColors[0],
+        '形容詞': schemeColors[2] ?? schemeColors[0],
+        '副詞': schemeColors[3] ?? schemeColors[0],
       }
       colorScale = (word) => posColors[word.pos ?? '名詞'] ?? '#6b7280' // gray fallback
     } else if (settings.colorRule === 'frequency') {
       // Frequency-based coloring (gradient from light to dark)
       const frequencyColorScale = scaleLinear<string>()
         .domain([minValue, maxValue])
-        .range(['#93c5fd', '#1e40af']) // light blue to dark blue
+        .range([schemeColors[0], schemeColors[schemeColors.length - 1]])
       colorScale = (word) => frequencyColorScale(word.value)
     } else {
       // Scheme-based coloring (original)
       const schemeColorScale = scaleOrdinal<string, string>()
         .domain(words.map((word) => word.text))
-        .range(getColorScheme(settings.colorSchemeId).colors)
+        .range(schemeColors)
       colorScale = (word) => schemeColorScale(word.text)
     }
 
@@ -418,23 +420,25 @@ export const useWordLayout = (
 
     let colorScale: (word: WordFrequency) => string
 
+    const schemeColors = getColorScheme(settings.colorSchemeId).colors
+
     if (settings.colorRule === 'pos') {
       const posColors: Record<string, string> = {
-        '名詞': '#3b82f6',
-        '動詞': '#ef4444',
-        '形容詞': '#10b981',
-        '副詞': '#f59e0b',
+        '名詞': schemeColors[0],
+        '動詞': schemeColors[1] ?? schemeColors[0],
+        '形容詞': schemeColors[2] ?? schemeColors[0],
+        '副詞': schemeColors[3] ?? schemeColors[0],
       }
       colorScale = (word) => posColors[word.pos ?? '名詞'] ?? '#6b7280'
     } else if (settings.colorRule === 'frequency') {
       const frequencyColorScale = scaleLinear<string>()
         .domain([minValue, maxValue])
-        .range(['#93c5fd', '#1e40af'])
+        .range([schemeColors[0], schemeColors[schemeColors.length - 1]])
       colorScale = (word) => frequencyColorScale(word.value)
     } else {
       const schemeColorScale = scaleOrdinal<string, string>()
         .domain(words.map((word) => word.text))
-        .range(getColorScheme(settings.colorSchemeId).colors)
+        .range(schemeColors)
       colorScale = (word) => schemeColorScale(word.text)
     }
 
