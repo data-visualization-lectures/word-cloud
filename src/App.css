@@ -47,9 +47,9 @@
 
 .form-grid {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  gap: 0.5rem 0.75rem;
-  align-items: center;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  align-items: stretch;
 }
 
 .field-label {
@@ -210,8 +210,7 @@
 }
 
 .form-grid .field-hint {
-  grid-column: 1 / -1;
-  margin: -0.1rem 0 0.35rem;
+  margin: -0.25rem 0 0.5rem;
 }
 
 .controls-panel input:focus,
