@@ -278,16 +278,78 @@ export const useWordLayout = (
           return
         }
 
+        // Calculate bounding box of the generated cloud
+        let minX = Infinity
+        let maxX = -Infinity
+        let minY = Infinity
+        let maxY = -Infinity
+
+        generated.forEach((word) => {
+          const x = word.x ?? 0
+          const y = word.y ?? 0
+          // Use a rough estimate for word dimensions if not available
+          // d3-cloud usually provides width/height but sometimes only size
+          const w = word.width ?? (word.size ?? 0)
+          // Height is often smaller than size due to font metrics, but let's be safe
+          const h = (word.height ?? (word.size ?? 0)) * TEXT_HEIGHT_RATIO
+
+          // Consider rotation
+          // Simple bounding box for rotated rectangle is complex,
+          // but we can use a safe approximation or check rotation
+          // For 0 and 90 degrees it's simple.
+          // For now, let's assume simple bounding box based on center x,y
+          // This is an approximation but sufficient for scaling
+          const halfW = w / 2
+          const halfH = h / 2
+
+          // If rotated 90 degrees (vertical), swap width and height
+          const isVertical = Math.abs(word.rotate ?? 0) === 90
+          const effectiveHalfW = isVertical ? halfH : halfW
+          const effectiveHalfH = isVertical ? halfW : halfH
+
+          minX = Math.min(minX, x - effectiveHalfW)
+          maxX = Math.max(maxX, x + effectiveHalfW)
+          minY = Math.min(minY, y - effectiveHalfH)
+          maxY = Math.max(maxY, y + effectiveHalfH)
+        })
+
+        // Calculate scale to fit canvas
+        const cloudWidth = maxX - minX
+        const cloudHeight = maxY - minY
+
+        // Avoid division by zero
+        const safeCloudWidth = Math.max(cloudWidth, 1)
+        const safeCloudHeight = Math.max(cloudHeight, 1)
+
+        const availableWidth = Math.max(width - settings.padding * 2, 1)
+        const availableHeight = Math.max(height - settings.padding * 2, 1)
+
+        const scaleX = availableWidth / safeCloudWidth
+        const scaleY = availableHeight / safeCloudHeight
+
+        // Use the smaller scale to fit both dimensions, but allow some zoom
+        // Cap the scale to avoid extreme zooming for few words
+        const scale = Math.min(scaleX, scaleY, 5)
+
         const mapped = generated.map<LayoutWord>((word) => {
-          const fontSize = word.size ?? fontScale(word.value)
-          const x = (word.x ?? 0) + width / 2
-          const y = (word.y ?? 0) + height / 2
-          const resolvedWidth = word.width ?? fontSize
-          const resolvedHeight = (word.height ?? fontSize) * TEXT_HEIGHT_RATIO
+          const baseFontSize = word.size ?? fontScale(word.value)
+          const scaledFontSize = baseFontSize * scale
+
+          // Scale coordinates. 
+          // Center the cloud: (x - center of cloud) * scale + center of canvas
+          const cloudCenterX = (minX + maxX) / 2
+          const cloudCenterY = (minY + maxY) / 2
+
+          const x = ((word.x ?? 0) - cloudCenterX) * scale + width / 2
+          const y = ((word.y ?? 0) - cloudCenterY) * scale + height / 2
+
+          const resolvedWidth = (word.width ?? baseFontSize) * scale
+          const resolvedHeight = (word.height ?? baseFontSize) * TEXT_HEIGHT_RATIO * scale
+
           return {
             text: word.text ?? '',
             value: word.value,
-            fontSize,
+            fontSize: scaledFontSize,
             radius: 0,
             x,
             y,

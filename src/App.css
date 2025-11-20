@@ -273,11 +273,8 @@ button:not(:disabled):hover {
   overflow: hidden;
 }
 
-.preview-canvas-wrapper::before {
-  content: '';
-  display: block;
-  padding-top: 60%;
-}
+/* Removed ::before with fixed padding-top - height is now dynamic based on aspect ratio */
+
 
 .preview-canvas {
   position: absolute;
