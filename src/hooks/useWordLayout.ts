@@ -38,8 +38,8 @@ type CloudWord = WordFrequency & {
 
 const MAX_CLOUD_ATTEMPTS = 5
 const FONT_SCALE_FACTOR = 0.9
-const MAX_RECT_RESOLUTION_ITERATIONS = 60
-const TEXT_HEIGHT_RATIO = 0.88
+const MAX_RECT_RESOLUTION_ITERATIONS = 120
+const TEXT_HEIGHT_RATIO = 0.75
 
 const clamp = (value: number, min: number, max: number) => {
   if (Number.isNaN(value)) return min
@@ -85,10 +85,10 @@ const resolveWordOverlaps = (
   const nodes = words.map((word) => ({
     ...word,
     width: word.width ?? word.fontSize,
-    height: (word.height ?? word.fontSize) * TEXT_HEIGHT_RATIO,
+    height: word.height ?? (word.fontSize * TEXT_HEIGHT_RATIO),
   }))
 
-  const paddingOffset = Math.max(0, padding)
+  const paddingOffset = Math.max(2, padding * 1.5)
   const maxFontSize = Math.max(...nodes.map((node) => node.fontSize), 1)
 
   for (let iteration = 0; iteration < MAX_RECT_RESOLUTION_ITERATIONS; iteration += 1) {
@@ -112,12 +112,12 @@ const resolveWordOverlaps = (
 
           if (overlapX < overlapY) {
             const direction = dx > 0 ? 1 : -1
-            const shift = overlapX * 0.55
+            const shift = overlapX * 0.8
             a.x -= shift * direction * weightA
             b.x += shift * direction * weightB
           } else {
             const direction = dy > 0 ? 1 : -1
-            const shift = overlapY * 0.55
+            const shift = overlapY * 0.8
             a.y -= shift * direction * weightA
             b.y += shift * direction * weightB
           }
