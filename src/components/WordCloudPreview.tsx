@@ -242,13 +242,13 @@ export const WordCloudPreview = ({
             ))}
           </select>
           <button type="button" onClick={handleDownloadSvg} disabled={!layoutWords.length}>
-            SVG
+            SVGダウンロード
           </button>
           <button type="button" onClick={handleDownloadPng} disabled={!layoutWords.length}>
-            PNG
+            PNGダウンロード
           </button>
           <button type="button" onClick={handleDownloadCsv} disabled={!words.length}>
-            CSV
+            CSVダウンロード
           </button>
         </div>
       </header>
