@@ -274,7 +274,7 @@ export const ControlsPanel = ({
 
   return (
     <section className="controls-panel">
-      <h1>Japanese Word Cloud</h1>
+      <h1>Word Cloud</h1>
       <p className="panel-description">
         テキストを貼り付けて、SVGとして使える日本語ワードクラウドを生成します。
       </p>
