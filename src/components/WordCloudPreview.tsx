@@ -193,6 +193,25 @@ export const WordCloudPreview = ({
     image.src = url
   }
 
+  const handleDownloadCsv = () => {
+    if (!words.length) return
+
+    // Create CSV content
+    const csvContent = [
+      'word,frequency',
+      ...words.map((w) => `"${w.text}",${w.value}`),
+    ].join('\n')
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'word-cloud-data.csv'
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <section className="preview-panel">
       <header className="preview-header">
@@ -223,10 +242,13 @@ export const WordCloudPreview = ({
             ))}
           </select>
           <button type="button" onClick={handleDownloadSvg} disabled={!layoutWords.length}>
-            SVGダウンロード
+            SVG
           </button>
           <button type="button" onClick={handleDownloadPng} disabled={!layoutWords.length}>
-            PNGダウンロード
+            PNG
+          </button>
+          <button type="button" onClick={handleDownloadCsv} disabled={!words.length}>
+            CSV
           </button>
         </div>
       </header>
