@@ -91,6 +91,7 @@ function App() {
           statusMessage={previewStatus}
           viewMode={viewMode}
           showBoundingBoxes={showBoundingBoxes}
+          onAspectRatioChange={(ratio) => handleSettingsChange({ aspectRatio: ratio })}
         />
       </main>
     </div>

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import noUiSlider, { type API as NoUiSliderInstance, PipsMode } from 'nouislider'
-import { ASPECT_RATIOS } from '../constants/aspectRatios'
 import { COLOR_SCHEMES } from '../constants/colors'
 import type { ViewMode, WordCloudSettings } from '../types'
 
@@ -52,6 +51,7 @@ export const ControlsPanel = ({
   onShowBoundingBoxesChange,
 }: ControlsPanelProps) => {
   const [isTextPanelOpen, setIsTextPanelOpen] = useState(true)
+  const [isStopwordsPanelOpen, setIsStopwordsPanelOpen] = useState(false)
   const [maxWordsInput, setMaxWordsInput] = useState(String(settings.maxWords))
   const [maxWordsError, setMaxWordsError] = useState<string | null>(null)
   const maxWordsSliderRef = useRef<HTMLDivElement | null>(null)
@@ -299,6 +299,35 @@ export const ControlsPanel = ({
         )}
       </div>
 
+      <div className="form-section">
+        <div className="field-label-row">
+          <label className="field-label" htmlFor="stopwords">
+            ストップワード
+          </label>
+          <button
+            type="button"
+            className="accordion-toggle"
+            aria-expanded={isStopwordsPanelOpen}
+            aria-controls="stopwords-accordion-panel"
+            onClick={() => setIsStopwordsPanelOpen((prev) => !prev)}
+          >
+            {isStopwordsPanelOpen ? 'ー' : '＋'}
+          </button>
+        </div>
+        {isStopwordsPanelOpen && (
+          <div id="stopwords-accordion-panel" className="accordion-panel">
+            <textarea
+              id="stopwords"
+              className="textarea small"
+              value={stopwordsText}
+              onChange={handleStopwordsChange}
+              rows={8}
+            />
+            <p className="field-hint">改行またはカンマ区切りで入力。正規化して比較します。</p>
+          </div>
+        )}
+      </div>
+
       <div className="form-grid">
         <label className="field-label" htmlFor="max-words">
           最大語数
@@ -359,22 +388,7 @@ export const ControlsPanel = ({
           ))}
         </select>
 
-        <label className="field-label" htmlFor="aspect-ratio">
-          アスペクト比
-        </label>
-        <select
-          id="aspect-ratio"
-          value={settings.aspectRatio}
-          onChange={(event) =>
-            onSettingsChange({ aspectRatio: event.target.value as WordCloudSettings['aspectRatio'] })
-          }
-        >
-          {ASPECT_RATIOS.map((ratio) => (
-            <option key={ratio.id} value={ratio.id}>
-              {ratio.label}
-            </option>
-          ))}
-        </select>
+
 
         <label className="field-label" htmlFor="view-mode">
           表示モード
@@ -456,19 +470,7 @@ export const ControlsPanel = ({
         </p>
       </div>
 
-      <div className="form-section">
-        <label className="field-label" htmlFor="stopwords">
-          ストップワード
-        </label>
-        <textarea
-          id="stopwords"
-          className="textarea small"
-          value={stopwordsText}
-          onChange={handleStopwordsChange}
-          rows={8}
-        />
-        <p className="field-hint">改行またはカンマ区切りで入力。正規化して比較します。</p>
-      </div>
+
     </section>
   )
 }

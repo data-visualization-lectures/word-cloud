@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { select } from 'd3-selection'
 import { transition } from 'd3-transition'
-import type { ViewMode, WordCloudSettings, WordFrequency } from '../types'
+import type { ViewMode, WordCloudSettings, WordFrequency, AspectRatio } from '../types'
 import { useWordLayout, type LayoutWord } from '../hooks/useWordLayout'
 import { ASPECT_RATIOS } from '../constants/aspectRatios'
 
@@ -12,6 +12,7 @@ interface WordCloudPreviewProps {
   statusMessage: string | null
   viewMode: ViewMode
   showBoundingBoxes: boolean
+  onAspectRatioChange: (ratio: AspectRatio) => void
 }
 
 export const WordCloudPreview = ({
@@ -20,6 +21,7 @@ export const WordCloudPreview = ({
   statusMessage,
   viewMode,
   showBoundingBoxes,
+  onAspectRatioChange,
 }: WordCloudPreviewProps) => {
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
@@ -199,6 +201,18 @@ export const WordCloudPreview = ({
           </p>
         </div>
         <div className="download-buttons">
+          <select
+            className="aspect-ratio-select"
+            value={settings.aspectRatio}
+            onChange={(e) => onAspectRatioChange(e.target.value as AspectRatio)}
+            style={{ marginRight: '1rem', padding: '0.5rem' }}
+          >
+            {ASPECT_RATIOS.map((ratio) => (
+              <option key={ratio.id} value={ratio.id}>
+                {ratio.label}
+              </option>
+            ))}
+          </select>
           <button type="button" onClick={handleDownloadSvg} disabled={!layoutWords.length}>
             SVGダウンロード
           </button>
