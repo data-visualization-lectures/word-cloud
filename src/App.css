@@ -312,6 +312,23 @@ svg {
 .download-buttons {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
+}
+
+.view-mode-select,
+.aspect-ratio-select {
+  border: 1px solid #cbd5f5;
+  border-radius: 12px;
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.view-mode-select:focus,
+.aspect-ratio-select:focus {
+  outline: 2px solid #6366f1;
+  border-color: #6366f1;
 }
 
 .file-upload-label {

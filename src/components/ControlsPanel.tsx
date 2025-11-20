@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import noUiSlider, { type API as NoUiSliderInstance, PipsMode } from 'nouislider'
 import { COLOR_SCHEMES } from '../constants/colors'
-import type { ViewMode, WordCloudSettings } from '../types'
+import type { WordCloudSettings } from '../types'
 
 interface ControlsPanelProps {
   text: string
@@ -11,8 +11,6 @@ interface ControlsPanelProps {
   settings: WordCloudSettings
   onSettingsChange: (patch: Partial<WordCloudSettings>) => void
   tokenCount: number
-  viewMode: ViewMode
-  onViewModeChange: (mode: ViewMode) => void
   onGenerate: () => void
   showBoundingBoxes: boolean
   onShowBoundingBoxesChange: (value: boolean) => void
@@ -44,8 +42,6 @@ export const ControlsPanel = ({
   settings,
   onSettingsChange,
   tokenCount,
-  viewMode,
-  onViewModeChange,
   onGenerate,
   showBoundingBoxes,
   onShowBoundingBoxesChange,
@@ -419,19 +415,6 @@ export const ControlsPanel = ({
           ))}
         </select>
 
-
-
-        <label className="field-label" htmlFor="view-mode">
-          表示モード
-        </label>
-        <select
-          id="view-mode"
-          value={viewMode}
-          onChange={(event) => onViewModeChange(event.target.value as ViewMode)}
-        >
-          <option value="cloud">Word Cloud</option>
-          <option value="bubble">Word Bubble</option>
-        </select>
 
         <label className="field-label" htmlFor="debug-bounding-boxes">
           デバッグ表示

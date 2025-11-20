@@ -13,6 +13,7 @@ interface WordCloudPreviewProps {
   viewMode: ViewMode
   showBoundingBoxes: boolean
   onAspectRatioChange: (ratio: AspectRatio) => void
+  onViewModeChange: (mode: ViewMode) => void
 }
 
 export const WordCloudPreview = ({
@@ -22,6 +23,7 @@ export const WordCloudPreview = ({
   viewMode,
   showBoundingBoxes,
   onAspectRatioChange,
+  onViewModeChange,
 }: WordCloudPreviewProps) => {
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
@@ -202,10 +204,17 @@ export const WordCloudPreview = ({
         </div>
         <div className="download-buttons">
           <select
+            className="view-mode-select"
+            value={viewMode}
+            onChange={(e) => onViewModeChange(e.target.value as ViewMode)}
+          >
+            <option value="cloud">Word Cloud</option>
+            <option value="bubble">Word Bubble</option>
+          </select>
+          <select
             className="aspect-ratio-select"
             value={settings.aspectRatio}
             onChange={(e) => onAspectRatioChange(e.target.value as AspectRatio)}
-            style={{ marginRight: '1rem', padding: '0.5rem' }}
           >
             {ASPECT_RATIOS.map((ratio) => (
               <option key={ratio.id} value={ratio.id}>

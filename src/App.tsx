@@ -79,8 +79,6 @@ function App() {
           settings={settings}
           onSettingsChange={handleSettingsChange}
           tokenCount={wordFrequencies.length}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
           onGenerate={handleGenerate}
           showBoundingBoxes={showBoundingBoxes}
           onShowBoundingBoxesChange={setShowBoundingBoxes}
@@ -92,6 +90,7 @@ function App() {
           viewMode={viewMode}
           showBoundingBoxes={showBoundingBoxes}
           onAspectRatioChange={(ratio) => handleSettingsChange({ aspectRatio: ratio })}
+          onViewModeChange={setViewMode}
         />
       </main>
     </div>
