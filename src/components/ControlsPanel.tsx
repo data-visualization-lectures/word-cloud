@@ -81,6 +81,25 @@ export const ControlsPanel = ({
     onStopwordsChange(event.target.value)
   }
 
+  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const content = e.target?.result
+      if (typeof content === 'string') {
+        onTextChange(content)
+      }
+    }
+    reader.onerror = () => {
+      alert('ファイルの読み込みに失敗しました。')
+    }
+    reader.readAsText(file, 'UTF-8')
+    // Reset input so the same file can be uploaded again
+    event.target.value = ''
+  }
+
   const handleFontSizeChange = (index: 0 | 1, value: number) => {
     const nextRange: [number, number] = [...settings.fontSizeRange]
     if (index === 0) {
@@ -279,6 +298,18 @@ export const ControlsPanel = ({
         </div>
         {isTextPanelOpen && (
           <div id="text-accordion-panel" className="accordion-panel">
+            <div style={{ marginBottom: '0.5rem' }}>
+              <label htmlFor="file-upload" className="file-upload-label">
+                📁 ファイルを選択
+              </label>
+              <input
+                id="file-upload"
+                type="file"
+                accept=".txt"
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+              />
+            </div>
             <textarea
               id="text-input"
               className="textarea"
