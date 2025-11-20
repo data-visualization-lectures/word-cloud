@@ -184,9 +184,31 @@ export const useWordLayout = (
 
     setIsCalculating(true)
 
-    const colorScale = scaleOrdinal<string, string>()
-      .domain(words.map((word) => word.text))
-      .range(getColorScheme(settings.colorSchemeId).colors)
+    // Create color scale based on color rule
+    let colorScale: (word: WordFrequency) => string
+
+    if (settings.colorRule === 'pos') {
+      // POS-based coloring
+      const posColors: Record<string, string> = {
+        '名詞': '#3b82f6', // blue
+        '動詞': '#ef4444', // red
+        '形容詞': '#10b981', // green
+        '副詞': '#f59e0b', // amber
+      }
+      colorScale = (word) => posColors[word.pos ?? '名詞'] ?? '#6b7280' // gray fallback
+    } else if (settings.colorRule === 'frequency') {
+      // Frequency-based coloring (gradient from light to dark)
+      const frequencyColorScale = scaleLinear<string>()
+        .domain([minValue, maxValue])
+        .range(['#93c5fd', '#1e40af']) // light blue to dark blue
+      colorScale = (word) => frequencyColorScale(word.value)
+    } else {
+      // Scheme-based coloring (original)
+      const schemeColorScale = scaleOrdinal<string, string>()
+        .domain(words.map((word) => word.text))
+        .range(getColorScheme(settings.colorSchemeId).colors)
+      colorScale = (word) => schemeColorScale(word.text)
+    }
 
     if (mode === 'bubble') {
       const radiusScale = scaleLinear()
@@ -226,7 +248,7 @@ export const useWordLayout = (
           x: clampedX,
           y: clampedY,
           rotate: 0,
-          color: colorScale(node.text),
+          color: colorScale(node),
           width: fontSize,
           height: textHeight,
         }
@@ -354,7 +376,7 @@ export const useWordLayout = (
             x,
             y,
             rotate: word.rotate ?? 0,
-            color: colorScale(word.text ?? ''),
+            color: colorScale({ text: word.text ?? '', value: word.value, pos: word.pos }),
             width: resolvedWidth,
             height: resolvedHeight,
           }
@@ -386,6 +408,7 @@ export const useWordLayout = (
     settings.spiral,
     rotationAngles,
     settings.colorSchemeId,
+    settings.colorRule,
     minValue,
     maxValue,
     mode,

@@ -23,14 +23,20 @@ const tokenizeWithKuromoji = (
   tokenizer: Tokenizer<IpadicFeatures>,
   stopwords: Set<string>,
   minTokenLength: number,
-): string[] => {
+): Array<{ text: string; pos: string }> => {
   const baseTokens = tokenizer.tokenize(text)
 
   return baseTokens
     .filter((token) => TARGET_POS.has(token.pos as string))
-    .map((token) => (token.basic_form && token.basic_form !== '*' ? token.basic_form : token.surface_form))
-    .map((token) => normalizeToken(token.trim()))
-    .filter((token) => !shouldSkipToken(token, stopwords, minTokenLength))
+    .map((token) => ({
+      text: token.basic_form && token.basic_form !== '*' ? token.basic_form : token.surface_form,
+      pos: token.pos as string,
+    }))
+    .map((item) => ({
+      text: normalizeToken(item.text.trim()),
+      pos: item.pos,
+    }))
+    .filter((item) => !shouldSkipToken(item.text, stopwords, minTokenLength))
 }
 
 interface FrequencyOptions {
@@ -52,14 +58,19 @@ export const computeWordFrequencies = ({
 
   const tokens = tokenizeWithKuromoji(text, tokenizer, stopwords, minTokenLength)
 
-  const counts = new Map<string, number>()
+  const counts = new Map<string, { value: number; pos: string }>()
 
   for (const token of tokens) {
-    counts.set(token, (counts.get(token) ?? 0) + 1)
+    const existing = counts.get(token.text)
+    if (existing) {
+      existing.value += 1
+    } else {
+      counts.set(token.text, { value: 1, pos: token.pos })
+    }
   }
 
   return Array.from(counts.entries())
-    .map(([word, value]) => ({ text: word, value }))
+    .map(([text, { value, pos }]) => ({ text, value, pos }))
     .sort((a, b) => b.value - a.value)
     .slice(0, maxWords)
 }

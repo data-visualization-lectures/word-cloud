@@ -434,6 +434,21 @@ export const ControlsPanel = ({
                 ))}
               </select>
 
+              <label className="field-label" htmlFor="color-rule">
+                色分けルール
+              </label>
+              <select
+                id="color-rule"
+                value={settings.colorRule}
+                onChange={(event) =>
+                  onSettingsChange({ colorRule: event.target.value as WordCloudSettings['colorRule'] })
+                }
+              >
+                <option value="scheme">カラースキーム</option>
+                <option value="pos">品詞ベース</option>
+                <option value="frequency">頻度ベース</option>
+              </select>
+
 
               <label className="field-label" htmlFor="debug-bounding-boxes">
                 デバッグ表示

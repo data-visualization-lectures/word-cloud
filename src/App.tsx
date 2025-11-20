@@ -20,6 +20,7 @@ function App() {
     padding: 2,
     rotationAngles: [0],
     colorSchemeId: DEFAULT_COLOR_SCHEME_ID,
+    colorRule: 'scheme',
     aspectRatio: 'landscape',
   })
 

@@ -198,8 +198,8 @@ export const WordCloudPreview = ({
 
     // Create CSV content
     const csvContent = [
-      'word,frequency',
-      ...words.map((w) => `"${w.text}",${w.value}`),
+      'word,frequency,pos',
+      ...words.map((w) => `"${w.text}",${w.value},"${w.pos ?? ''}"`),
     ].join('\n')
 
     // Create blob and download
