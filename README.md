@@ -31,4 +31,4 @@ npm run dev   # Vite dev サーバー（辞書配信ヘッダーを忘れずに�
 npm run build # 本番ビルド
 ```
 
-`npm run dev` を使わず `npm run build` → 任意の静的サーバーで `dist/` を配信しても動作します。CDN アクセスが許可されている環境であれば追加設定は不要です。
+
