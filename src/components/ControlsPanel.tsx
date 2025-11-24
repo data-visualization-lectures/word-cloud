@@ -275,7 +275,7 @@ export const ControlsPanel = ({
     <section className="controls-panel">
       <h1>Word Cloud</h1>
       <p className="panel-description">
-        テキストを貼り付けて、SVGとして使える日本語ワードクラウドを生成します。
+        テキストを貼り付けて「生成ボタン」を押すと、形態素解析を行い Word Cloud / Word Bubble を生成します。
       </p>
 
       <div className="form-section text-input-section">
