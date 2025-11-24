@@ -61,6 +61,7 @@ export const ControlsPanel = ({
     ROTATION_PRESETS.find((preset) => arraysEqual(preset.angles, settings.rotationAngles))?.id ??
     'custom'
 
+
   useEffect(() => {
     setMaxWordsInput(String(settings.maxWords))
     setMaxWordsError(null)
@@ -96,6 +97,12 @@ export const ControlsPanel = ({
     event.target.value = ''
   }
 
+  useEffect(() => {
+    if (maxWordsSliderInstance.current) {
+      maxWordsSliderInstance.current.set(settings.maxWords)
+    }
+  }, [settings.maxWords])
+
   const handleFontSizeChange = (index: 0 | 1, value: number) => {
     const nextRange: [number, number] = [...settings.fontSizeRange]
     if (index === 0) {
@@ -111,6 +118,7 @@ export const ControlsPanel = ({
     setIsAdvancedSettingsOpen(true)
     onGenerate()
   }
+
 
   const handleMaxWordsChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target
