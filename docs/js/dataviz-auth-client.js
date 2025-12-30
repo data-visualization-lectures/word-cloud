@@ -347,6 +347,8 @@ async function initDatavizToolAuth() {
     if (profile) {
       // 成功 -> UI更新
       headerUI.update({ isLoading: false, user: profile });
+      // グローバルにセッション情報を公開
+      window.datavizAuth = { session, profile };
     }
     // 失敗時は verifyUserAccess 内でリダイレクトされる
   };
