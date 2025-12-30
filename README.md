@@ -32,3 +32,5 @@ npm run build # 本番ビルド
 ```
 
 
+http://localhost:5173/
+http://localhost:5173/?auth_debug
