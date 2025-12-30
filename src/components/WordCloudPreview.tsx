@@ -1,11 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { select } from 'd3-selection'
 import { transition } from 'd3-transition'
 import type { ViewMode, WordCloudSettings, WordFrequency, AspectRatio } from '../types'
 import { useWordLayout, type LayoutWord } from '../hooks/useWordLayout'
 import { ASPECT_RATIOS } from '../constants/aspectRatios'
 import { COLOR_SCHEMES } from '../constants/colors'
+import { svgToPngBlob } from '../lib/image-utils'
 
+
+export interface WordCloudPreviewHandle {
+  getThumbnailBlob: () => Promise<Blob | null>
+}
 
 interface WordCloudPreviewProps {
   words: WordFrequency[]
@@ -19,7 +24,7 @@ interface WordCloudPreviewProps {
   onColorRuleChange: (rule: WordCloudSettings['colorRule']) => void
 }
 
-export const WordCloudPreview = ({
+export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPreviewProps>(({
   words,
   settings,
   statusMessage,
@@ -29,7 +34,7 @@ export const WordCloudPreview = ({
   onViewModeChange,
   onColorSchemeChange,
   onColorRuleChange,
-}: WordCloudPreviewProps) => {
+}, ref) => {
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
@@ -38,6 +43,18 @@ export const WordCloudPreview = ({
     const config = ASPECT_RATIOS.find((r) => r.id === settings.aspectRatio)
     return config?.ratio ?? 16 / 9
   }, [settings.aspectRatio])
+
+  useImperativeHandle(ref, () => ({
+    getThumbnailBlob: async () => {
+      if (!svgRef.current || !dimensions.width || !dimensions.height) return null
+      try {
+        return await svgToPngBlob(svgRef.current, dimensions.width, dimensions.height)
+      } catch (err) {
+        console.error('Failed to generate thumbnail', err)
+        return null
+      }
+    }
+  }))
 
   useEffect(() => {
     if (!wrapperRef.current) return
@@ -157,45 +174,21 @@ export const WordCloudPreview = ({
     URL.revokeObjectURL(url)
   }
 
-  const handleDownloadPng = () => {
+  const handleDownloadPng = async () => {
     if (!svgRef.current || !layoutWords.length || !dimensions.width || !dimensions.height) return
 
-    const serializer = new XMLSerializer()
-    const source = serializer.serializeToString(svgRef.current)
-    const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const image = new Image()
-    image.crossOrigin = 'anonymous'
-    image.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = dimensions.width
-      canvas.height = dimensions.height
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        URL.revokeObjectURL(url)
-        return
-      }
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(image, 0, 0)
-      canvas.toBlob((pngBlob) => {
-        if (!pngBlob) {
-          URL.revokeObjectURL(url)
-          return
-        }
-        const pngUrl = URL.createObjectURL(pngBlob)
-        const link = document.createElement('a')
-        link.href = pngUrl
-        link.download = 'word-cloud.png'
-        link.click()
-        URL.revokeObjectURL(pngUrl)
-        URL.revokeObjectURL(url)
-      }, 'image/png')
-    }
-    image.onerror = () => {
+    try {
+      const blob = await svgToPngBlob(svgRef.current, dimensions.width, dimensions.height)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'word-cloud.png'
+      link.click()
       URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Download failed', err)
+      alert('画像の生成に失敗しました。')
     }
-    image.src = url
   }
 
   const handleDownloadCsv = () => {
@@ -301,4 +294,4 @@ export const WordCloudPreview = ({
       </div>
     </section>
   )
-}
+})
