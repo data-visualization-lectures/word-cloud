@@ -1,8 +1,8 @@
 .app-shell {
   min-height: 100vh;
-  padding: 2rem 1rem;
+  /* Header height (48px) + spacing (2rem) approx 80px */
+  padding: 5rem 1rem 2rem;
   background: radial-gradient(circle at top, #eef2ff 0%, #f8fafc 45%, #f1f5f9 100%);
-  margin-top: 48px;
 }
 
 .word-cloud-app {
