@@ -109,9 +109,11 @@ function App() {
 
     const tryLoad = async () => {
       // @ts-ignore
-      if (!window.datavizAuth?.session) {
-        return false
-      }
+      const sb = window.datavizSupabase
+      if (!sb) return false
+
+      const { data } = await sb.auth.getSession()
+      if (!data.session) return false
 
       try {
         const data = await loadProject(projectId)

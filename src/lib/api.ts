@@ -11,14 +11,16 @@ class ApiError extends Error {
     }
 }
 
-function getAuthToken(): string | null {
+async function getAuthToken(): Promise<string | null> {
     // @ts-ignore
-    const session = window.datavizAuth?.session
-    return session?.access_token || null
+    const sb = window.datavizSupabase
+    if (!sb) return null
+    const { data } = await sb.auth.getSession()
+    return data.session?.access_token || null
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-    const token = getAuthToken()
+    const token = await getAuthToken()
     if (!token) {
         throw new ApiError('Not authenticated', 'not_authenticated')
     }
@@ -94,7 +96,7 @@ export const api = {
     },
 
     async getThumbnailBlob(id: string): Promise<Blob> {
-        const token = getAuthToken()
+        const token = await getAuthToken()
         if (!token) {
             throw new ApiError('Not authenticated', 'not_authenticated')
         }

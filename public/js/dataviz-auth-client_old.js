@@ -1,6 +1,3 @@
-// Imports removed for browser usage
-
-
 // ---- 設定 ----
 const SUPABASE_URL = "https://vebhoeiltxspsurqoxvl.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlYmhvZWlsdHhzcHN1cnFveHZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAyMjI2MTIsImV4cCI6MjA0NTc5ODYxMn0.sV-Xf6wP_m46D_q-XN0oZfK9NogDqD9xV5sS-n6J8c4"; // 公開OKなAnon Key
@@ -62,7 +59,7 @@ const cookieStorage = {
 };
 
 // ---- Supabase クライアント作成 ----
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: cookieStorage,
     storageKey: AUTH_COOKIE_NAME,
@@ -70,29 +67,32 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },
-});
-// 外部公開（リファクタリング対応）
-window.datavizSupabase = supabase;
+}) : null;
 
 
 // =========================================================================
-// UI Component: 共通ヘッダー (Web Component Standard)
+// UI Component: 共通ヘッダー (Shadow DOM使用)
 // =========================================================================
-class DatavizGlobalHeader extends HTMLElement {
+class DatavizGlobalHeader {
   constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
+    this.host = document.createElement('div');
+    this.host.id = 'dataviz-global-header-host';
+    this.shadow = this.host.attachShadow({ mode: 'open' });
     this.state = {
       isLoading: true,
       user: null
     };
   }
 
-  connectedCallback() {
+  mount() {
+    // 既存のものがあれば削除（二重防止）
+    const existing = document.getElementById('dataviz-global-header-host');
+    if (existing) existing.remove();
+    document.body.prepend(this.host);
     this.render();
   }
 
-  updateState(newState) {
+  update(newState) {
     this.state = { ...this.state, ...newState };
     this.render();
   }
@@ -105,10 +105,7 @@ class DatavizGlobalHeader extends HTMLElement {
         display: block;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         z-index: 99999;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
+        position: relative;
       }
       .dv-header {
         background-color: #111;
@@ -216,7 +213,7 @@ class DatavizGlobalHeader extends HTMLElement {
       `;
     }
 
-    this.shadowRoot.innerHTML = `
+    this.shadow.innerHTML = `
       <style>${this.getStyles()}</style>
       <div class="dv-header">
         <div class="dv-left">
@@ -229,7 +226,7 @@ class DatavizGlobalHeader extends HTMLElement {
     `;
 
     // イベントリスナーの再結合 (Shadow DOM再描画後)
-    const logoutBtn = this.shadowRoot.getElementById('dv-logout-btn');
+    const logoutBtn = this.shadow.getElementById('dv-logout-btn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async () => {
         if (confirm('ログアウトしますか？')) {
@@ -240,7 +237,6 @@ class DatavizGlobalHeader extends HTMLElement {
     }
   }
 }
-customElements.define('dataviz-header', DatavizGlobalHeader);
 
 
 // =========================================================================
@@ -317,20 +313,21 @@ async function initDatavizToolAuth() {
     return;
   }
 
-  // 1. UIの初期化・表示 (Web Component)
-  let headerEl = document.querySelector('dataviz-header');
-  if (!headerEl) {
-    headerEl = document.createElement('dataviz-header');
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => document.body.prepend(headerEl));
-    } else {
-      document.body.prepend(headerEl);
-    }
+  // 1. UIの初期化・表示
+  const headerUI = new DatavizGlobalHeader();
+  // DOMContentLoadedを待つ
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => headerUI.mount());
+  } else {
+    headerUI.mount();
   }
 
   let isCheckDone = false;
 
   const handleSession = async (session) => {
+    // UIをローディング状態に
+    // headerUI.update({ isLoading: true }); // チラつき防止のためここでのローディング表示は慎重に
+
     // URLパラメータ掃除
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const searchParams = new URLSearchParams(window.location.search);
@@ -340,7 +337,7 @@ async function initDatavizToolAuth() {
 
     if (!session) {
       // 未ログイン
-      if (headerEl) headerEl.updateState({ isLoading: false, user: null });
+      headerUI.update({ isLoading: false, user: null });
       await verifyUserAccess(null); // リダイレクト実行
       return;
     }
@@ -349,21 +346,36 @@ async function initDatavizToolAuth() {
     const profile = await verifyUserAccess(session);
     if (profile) {
       // 成功 -> UI更新
-      if (headerEl) headerEl.updateState({ isLoading: false, user: profile });
+      headerUI.update({ isLoading: false, user: profile });
+      // グローバルにセッション情報を公開
+      window.datavizAuth = { session, profile };
     }
     // 失敗時は verifyUserAccess 内でリダイレクトされる
   };
 
-  // authStateChange のみで判定（初期化タイミング問題を回避）
+  // Authイベント監視
   supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') {
-      if (!isCheckDone) {
-        isCheckDone = true;
-      }
+    if (event === 'INITIAL_SESSION') {
+      if (isCheckDone) return;
+      isCheckDone = true;
       await handleSession(session);
     }
+    else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      await handleSession(session);
+    }
+    else if (event === 'SIGNED_OUT') {
+      await handleSession(null);
+    }
   });
+
+  // フォールバックチェック
+  const { data } = await supabase.auth.getSession();
+  if (!isCheckDone) {
+    isCheckDone = true;
+    await handleSession(data.session);
+  }
 }
 
 // 自動実行
 initDatavizToolAuth();
+window.supabase = supabase;
