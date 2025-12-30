@@ -2,6 +2,7 @@
   min-height: 100vh;
   padding: 2rem 1rem;
   background: radial-gradient(circle at top, #eef2ff 0%, #f8fafc 45%, #f1f5f9 100%);
+  margin-top: 48px;
 }
 
 .word-cloud-app {
