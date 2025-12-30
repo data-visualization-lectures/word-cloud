@@ -79,15 +79,6 @@ function App() {
 
   // --- Project Actions ---
 
-  const handleNewProject = () => {
-    if (confirm('現在の内容をクリアして新規作成しますか？')) {
-      setText(SAMPLE_TEXT)
-      setStopwordsText(defaultStopwords)
-      setCurrentProject(null)
-      setGeneratedInputs(null)
-      // Reset settings to defaults if needed, but keeping current settings is often friendly
-    }
-  }
 
   const handleLoadProjectClick = () => {
     setIsLoadModalOpen(true)

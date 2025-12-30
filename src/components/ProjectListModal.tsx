@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import type { ProjectMeta } from '../types'
-import { blobToBase64 } from '../lib/image-utils' // If needed, but here we just read from API
+// import { blobToBase64 } from '../lib/image-utils' // If needed, but here we just read from API
 
 interface ProjectListModalProps {
     isOpen: boolean

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { api } from '../lib/api'
-import type { ProjectData, ProjectMeta, CreateProjectPayload, UpdateProjectPayload } from '../types'
+import type { ProjectMeta, CreateProjectPayload, UpdateProjectPayload } from '../types'
 
 export function useProject() {
     const [currentProject, setCurrentProject] = useState<ProjectMeta | null>(null)
