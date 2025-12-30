@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import './App.css'
 import { ControlsPanel } from './components/ControlsPanel'
 import { WordCloudPreview, type WordCloudPreviewHandle } from './components/WordCloudPreview'
@@ -6,6 +6,7 @@ import { SaveProjectModal } from './components/SaveProjectModal'
 import { ProjectListModal } from './components/ProjectListModal'
 import { useProject } from './hooks/useProject'
 import { blobToBase64 } from './lib/image-utils'
+import { api } from './lib/api'
 import { DEFAULT_COLOR_SCHEME_ID } from './constants/colors'
 import { DEFAULT_JA_STOPWORDS, SAMPLE_TEXT } from './constants/stopwords'
 import { useKuromojiTokenizer } from './hooks/useKuromojiTokenizer'
@@ -78,6 +79,96 @@ function App() {
   }
 
   // --- Project Actions ---
+
+  // URLからのプロジェクト読み込み
+  // 認証(window.datavizAuth)待ちと、tokenizerロード待ちが必要
+  useMemo(() => {
+    // URLからproject_idを取得
+    const params = new URLSearchParams(window.location.search)
+    const projectIdFromUrl = params.get('project_id')
+
+    // まだ読み込み中でない、かつ tokenizer 準備OKなら
+    if (projectIdFromUrl && !tokenizerLoading && !generatedInputs) {
+      // ここで直接非同期コールできないので、別途useEffectで処理する
+    }
+  }, [tokenizerLoading, generatedInputs])
+
+  // URLパラメータ起因のロード処理
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const projectId = params.get('project_id')
+
+    if (!projectId) return
+    if (currentProject && currentProject.id === projectId) return // すでにロード済み
+
+    // 認証待ち: window.datavizAuth がない場合は少し待つ必要があるかもしれないが、
+    // dataviz-auth-client.js は DOMContentLoaded で初期化し、セッションがあれば即 window.datavizAuth に入れる。
+    // ただしタイミング依存があるため、リトライロジックか、dataviz-auth-client側のイベントがあると良いが、
+    // ここではポーリングで待機する簡易実装とする。
+
+    const tryLoad = async () => {
+      // @ts-ignore
+      if (!window.datavizAuth?.session) {
+        return false
+      }
+
+      try {
+        const data = await loadProject(projectId)
+        // Load successful
+        setText(data.text)
+        setStopwordsText(data.stopwordsText)
+        setSettings(data.settings)
+
+        // メタデータとしてIDだけセット（名前などは取得できてないため仮）
+        // GET /api/projects/[id] は本文だけ返すため、メタデータ(name)が不明。
+        // これを解決するには一覧を取るか、APIでメタデータも返すようにするかだが、
+        // 一旦仮の名前を設定し、保存時に更新することで対応、あるいは一覧から探す。
+        // ここではAPIクライアントにメタデータ取得機能がないため、一覧から探す。
+
+        try {
+          const list = await api.listProjects('word-cloud')
+          const meta = list.find(p => p.id === projectId)
+          if (meta) {
+            setCurrentProject(meta)
+          } else {
+            // リストにない（他人のプロジェクト？）場合はIDのみ保持
+            setCurrentProject({
+              id: projectId, name: 'Imported Project', app_name: 'word-cloud', created_at: '', updated_at: ''
+            })
+          }
+        } catch {
+          // リスト取得失敗時は仮セット
+          setCurrentProject({
+            id: projectId, name: 'Loaded Project', app_name: 'word-cloud', created_at: '', updated_at: ''
+          })
+        }
+
+        setGeneratedInputs({
+          text: data.text,
+          stopwords: new Set(parseStopwords(data.stopwordsText)),
+        })
+
+        // URLからクエリパラメータを削除（オプション）
+        // window.history.replaceState({}, '', window.location.pathname)
+
+        return true
+      } catch (e) {
+        console.error("Failed to load project from URL", e)
+        return true // エラーでもリトライ終了
+      }
+    }
+
+    const intervalId = setInterval(async () => {
+      const done = await tryLoad()
+      if (done) clearInterval(intervalId)
+    }, 500)
+
+    // 10秒でタイムアウト
+    setTimeout(() => clearInterval(intervalId), 10000)
+
+    return () => clearInterval(intervalId)
+
+  }, []) // 初回マウント時のみチェック（依存配列空でOK、内部で条件分岐）
 
 
   const handleLoadProjectClick = () => {
