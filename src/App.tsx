@@ -39,6 +39,7 @@ function App() {
   } = useProject()
 
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
+  const [saveModalInitialName, setSaveModalInitialName] = useState('')
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false)
   const [thumbnailForSave, setThumbnailForSave] = useState<Blob | null>(null)
 
@@ -219,6 +220,12 @@ function App() {
         alert('保存しました')
       } else {
         // Create new project
+        const today = new Date()
+        const year = today.getFullYear()
+        const month = String(today.getMonth() + 1).padStart(2, '0')
+        const day = String(today.getDate()).padStart(2, '0')
+        setSaveModalInitialName(`${year}-${month}-${day}`)
+
         setThumbnailForSave(blob)
         setIsSaveModalOpen(true)
       }
@@ -298,6 +305,7 @@ function App() {
         isOpen={isSaveModalOpen}
         onClose={() => setIsSaveModalOpen(false)}
         onSave={handleSaveModalSubmit}
+        initialName={saveModalInitialName}
         thumbnailBlob={thumbnailForSave}
       />
 
