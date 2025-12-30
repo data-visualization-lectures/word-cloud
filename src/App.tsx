@@ -178,10 +178,9 @@ function App() {
               編集中: <strong>{currentProject.name}</strong>
             </span>
           )}
-          <button onClick={handleNewProject} className="button-secondary">新規作成</button>
-          <button onClick={handleLoadProjectClick} className="button-secondary">開く</button>
+          <button onClick={handleLoadProjectClick} className="button-secondary">サーバから読込</button>
           <button onClick={handleSaveClick}>
-            {currentProject ? '上書き保存' : 'クラウドに保存'}
+            {currentProject ? '上書き保存' : 'サーバに保存'}
           </button>
         </div>
       </header>
