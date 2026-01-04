@@ -1,6 +1,8 @@
 import type { CreateProjectPayload, ProjectMeta, UpdateProjectPayload, ProjectData } from '../types'
 
-const API_BASE_URL = 'https://api.dataviz.jp'
+// API Base URL provided by dataviz-auth-client.js
+// const API_BASE_URL = 'https://api.dataviz.jp' // Removed in favor of dynamic global variable
+
 
 class ApiError extends Error {
     code: string
@@ -12,7 +14,6 @@ class ApiError extends Error {
 }
 
 async function getAuthToken(): Promise<string | null> {
-    // @ts-ignore
     const sb = window.datavizSupabase
     if (!sb) return null
     const { data } = await sb.auth.getSession()
@@ -31,7 +32,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         headers.set('Content-Type', 'application/json')
     }
 
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await fetch(`${window.datavizApiUrl}${path}`, {
         ...options,
         headers,
     })
@@ -100,7 +101,7 @@ export const api = {
         if (!token) {
             throw new ApiError('Not authenticated', 'not_authenticated')
         }
-        const response = await fetch(`${API_BASE_URL}/api/projects/${id}/thumbnail`, {
+        const response = await fetch(`${window.datavizApiUrl}/api/projects/${id}/thumbnail`, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
