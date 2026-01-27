@@ -174,6 +174,19 @@ function App() {
   }, []) // 初回マウント時のみチェック（依存配列空でOK、内部で条件分岐）
 
 
+  const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
+    const header = document.querySelector('dataviz-tool-header')
+    if (header && (header as any).showMessage) {
+      (header as any).showMessage(message, type)
+    } else {
+      // Fallback
+      if (type === 'error') console.error(message)
+      else console.log(message)
+      // Only fallback to alert for critical errors if header missing? 
+      // User requested "Integrate into toolbar", so reliance on header is expected.
+    }
+  }
+
   const handleLoadProjectClick = () => {
     setIsLoadModalOpen(true)
   }
@@ -194,15 +207,16 @@ function App() {
       })
 
       setIsLoadModalOpen(false)
+      showToast(`プロジェクト "${project.name}" を読み込みました`, 'success')
     } catch (e) {
       console.error(e)
-      alert('プロジェクトの読み込みに失敗しました')
+      showToast('プロジェクトの読み込みに失敗しました', 'error')
     }
   }
 
   const handleSaveClick = async () => {
     if (!generatedInputs) {
-      alert('保存する前にワードクラウドを生成してください。')
+      showToast('保存する前にワードクラウドを生成してください。', 'error')
       return
     }
 
@@ -219,7 +233,7 @@ function App() {
           data: { text, stopwordsText, settings },
           thumbnail: base64
         })
-        alert('保存しました')
+        showToast('保存しました', 'success')
       } else {
         // Create new project
         const today = new Date()
@@ -233,19 +247,24 @@ function App() {
       }
     } catch (e) {
       console.error(e)
-      alert('保存処理中にエラーが発生しました。')
+      showToast('保存処理中にエラーが発生しました。', 'error')
     }
   }
 
   const handleSaveModalSubmit = async (name: string) => {
     const base64 = thumbnailForSave ? await blobToBase64(thumbnailForSave) : undefined
-    await createNewProject({
-      name,
-      app_name: 'word-cloud',
-      data: { text, stopwordsText, settings },
-      thumbnail: base64
-    })
-    alert('新規プロジェクトとして保存しました')
+    try {
+      await createNewProject({
+        name,
+        app_name: 'word-cloud',
+        data: { text, stopwordsText, settings },
+        thumbnail: base64
+      })
+      showToast('新規プロジェクトとして保存しました', 'success')
+    } catch (e) {
+      console.error(e)
+      showToast('保存に失敗しました', 'error')
+    }
   }
 
   const shouldRender = Boolean(generatedInputs)
@@ -259,64 +278,83 @@ function App() {
     return null
   })()
 
+  useEffect(() => {
+    // 画面更新時にヘッダーを再設定する
+    customElements.whenDefined('dataviz-tool-header').then(() => {
+      const header = document.querySelector('dataviz-tool-header');
+      if (header) {
+        // @ts-ignore
+        header.setConfig({
+          logo: {
+            type: 'text',
+            text: 'Word Cloud',
+            textClass: 'font-bold text-lg text-white'
+          },
+          buttons: [
+            {
+              label: 'プロジェクトの読込',
+              action: handleLoadProjectClick,
+              align: 'right'
+            },
+            {
+              label: 'プロジェクトの保存',
+              action: handleSaveClick,
+              align: 'right'
+            }
+          ]
+        })
+      }
+    })
+  }, [handleLoadProjectClick, handleSaveClick]);
+
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <h1>Word Cloud</h1>
-        <div className="header-actions">
-          {currentProject && (
-            <span className="current-project-name">
-              編集中: <strong>{currentProject.name}</strong>
-            </span>
-          )}
-          <button onClick={handleLoadProjectClick} className="button-secondary">サーバから読込</button>
-          <button onClick={handleSaveClick}>
-            {currentProject ? '上書き保存' : 'サーバに保存'}
-          </button>
-        </div>
-      </header>
+    <>
+      {/* @ts-ignore */}
+      <dataviz-tool-header></dataviz-tool-header>
 
-      <main className="word-cloud-app">
-        <ControlsPanel
-          text={text}
-          onTextChange={setText}
-          stopwordsText={stopwordsText}
-          onStopwordsChange={setStopwordsText}
-          settings={settings}
-          onSettingsChange={handleSettingsChange}
-          tokenCount={wordFrequencies.length}
-          onGenerate={handleGenerate}
-          showBoundingBoxes={showBoundingBoxes}
-          onShowBoundingBoxesChange={setShowBoundingBoxes}
+      <div className="app-shell">
+        <main className="word-cloud-app">
+          <ControlsPanel
+            text={text}
+            onTextChange={setText}
+            stopwordsText={stopwordsText}
+            onStopwordsChange={setStopwordsText}
+            settings={settings}
+            onSettingsChange={handleSettingsChange}
+            tokenCount={wordFrequencies.length}
+            onGenerate={handleGenerate}
+            showBoundingBoxes={showBoundingBoxes}
+            onShowBoundingBoxesChange={setShowBoundingBoxes}
+          />
+          <WordCloudPreview
+            ref={previewRef}
+            words={wordFrequencies}
+            settings={settings}
+            statusMessage={previewStatus}
+            viewMode={viewMode}
+            showBoundingBoxes={showBoundingBoxes}
+            onAspectRatioChange={(ratio) => handleSettingsChange({ aspectRatio: ratio })}
+            onViewModeChange={setViewMode}
+            onColorSchemeChange={(schemeId) => handleSettingsChange({ colorSchemeId: schemeId })}
+            onColorRuleChange={(rule) => handleSettingsChange({ colorRule: rule })}
+          />
+        </main>
+
+        <SaveProjectModal
+          isOpen={isSaveModalOpen}
+          onClose={() => setIsSaveModalOpen(false)}
+          onSave={handleSaveModalSubmit}
+          initialName={saveModalInitialName}
+          thumbnailBlob={thumbnailForSave}
         />
-        <WordCloudPreview
-          ref={previewRef}
-          words={wordFrequencies}
-          settings={settings}
-          statusMessage={previewStatus}
-          viewMode={viewMode}
-          showBoundingBoxes={showBoundingBoxes}
-          onAspectRatioChange={(ratio) => handleSettingsChange({ aspectRatio: ratio })}
-          onViewModeChange={setViewMode}
-          onColorSchemeChange={(schemeId) => handleSettingsChange({ colorSchemeId: schemeId })}
-          onColorRuleChange={(rule) => handleSettingsChange({ colorRule: rule })}
+
+        <ProjectListModal
+          isOpen={isLoadModalOpen}
+          onClose={() => setIsLoadModalOpen(false)}
+          onSelect={handleProjectSelect}
         />
-      </main>
-
-      <SaveProjectModal
-        isOpen={isSaveModalOpen}
-        onClose={() => setIsSaveModalOpen(false)}
-        onSave={handleSaveModalSubmit}
-        initialName={saveModalInitialName}
-        thumbnailBlob={thumbnailForSave}
-      />
-
-      <ProjectListModal
-        isOpen={isLoadModalOpen}
-        onClose={() => setIsLoadModalOpen(false)}
-        onSelect={handleProjectSelect}
-      />
-    </div>
+      </div>
+    </>
   )
 }
 

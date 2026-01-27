@@ -1,7 +1,7 @@
 .app-shell {
   min-height: 100vh;
-  /* Header height (48px) + spacing (2rem) approx 80px */
-  padding: 5rem 1rem 2rem;
+  /* Remove top padding so header sits at the top */
+  padding: 0 1rem 2rem;
   background: radial-gradient(circle at top, #eef2ff 0%, #f8fafc 45%, #f1f5f9 100%);
 }
 
@@ -9,7 +9,8 @@
   display: flex;
   gap: 1.5rem;
   max-width: 1600px;
-  margin: 0 auto;
+  /* Add top margin to separate content from header */
+  margin: 1rem auto 0;
   align-items: flex-start;
 }
 
