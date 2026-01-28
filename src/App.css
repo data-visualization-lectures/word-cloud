@@ -622,3 +622,8 @@ svg {
   display: flex;
   gap: 1rem;
 }
+
+dataviz-tool-header {
+  margin-top: 48px;
+  display: block;
+}
