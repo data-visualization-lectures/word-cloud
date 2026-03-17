@@ -309,9 +309,6 @@ function App() {
 
   return (
     <>
-      {/* @ts-ignore */}
-      <dataviz-tool-header></dataviz-tool-header>
-
       <div className="app-shell">
         <main className="word-cloud-app">
           <ControlsPanel

@@ -1,7 +1,7 @@
 .app-shell {
   min-height: 100vh;
-  /* Remove top padding so header sits at the top */
-  padding: 0 1rem 2rem;
+  /* Account for fixed headers: dataviz-header (48px) + dataviz-tool-header (~44px) */
+  padding: 92px 1rem 2rem;
   background: radial-gradient(circle at top, #eef2ff 0%, #f8fafc 45%, #f1f5f9 100%);
 }
 
@@ -624,6 +624,5 @@ svg {
 }
 
 dataviz-tool-header {
-  margin-top: 48px;
   display: block;
 }
