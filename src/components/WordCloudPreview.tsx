@@ -6,6 +6,7 @@ import { useWordLayout, type LayoutWord } from '../hooks/useWordLayout'
 import { ASPECT_RATIOS } from '../constants/aspectRatios'
 import { COLOR_SCHEMES } from '../constants/colors'
 import { svgToPngBlob } from '../lib/image-utils'
+import { useI18n } from '../i18n'
 
 
 export interface WordCloudPreviewHandle {
@@ -35,6 +36,7 @@ export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPrev
   onColorSchemeChange,
   onColorRuleChange,
 }, ref) => {
+  const { t } = useI18n()
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
@@ -153,10 +155,10 @@ export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPrev
   const placeholderMessage = useMemo(() => {
     if (statusMessage) return statusMessage
     if (!words.length && !isCalculating) {
-      return '抽出できる単語が見つかりません。設定を確認してください。'
+      return t('preview.noWordsDetail')
     }
     return null
-  }, [statusMessage, words.length, isCalculating])
+  }, [statusMessage, words.length, isCalculating, t])
 
   const handleDownloadSvg = () => {
     if (!svgRef.current || !layoutWords.length) return
@@ -187,20 +189,18 @@ export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPrev
       URL.revokeObjectURL(url)
     } catch (err) {
       console.error('Download failed', err)
-      alert('画像の生成に失敗しました。')
+      alert(t('preview.downloadFailed'))
     }
   }
 
   const handleDownloadCsv = () => {
     if (!words.length) return
 
-    // Create CSV content
     const csvContent = [
       'word,frequency,pos',
       ...words.map((w) => `"${w.text}",${w.value},"${w.pos ?? ''}"`),
     ].join('\n')
 
-    // Create blob and download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -214,7 +214,7 @@ export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPrev
     <section className="preview-panel">
       <header className="preview-header">
         <p className="preview-meta">
-          表示語数: <strong>{layoutWords.length}</strong>
+          {t('preview.wordCount')}: <strong>{layoutWords.length}</strong>
         </p>
         <div className="download-buttons">
           <select
@@ -232,7 +232,7 @@ export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPrev
           >
             {COLOR_SCHEMES.map((scheme) => (
               <option key={scheme.id} value={scheme.id}>
-                {scheme.label}
+                {t(scheme.labelKey)}
               </option>
             ))}
           </select>
@@ -241,9 +241,9 @@ export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPrev
             value={settings.colorRule}
             onChange={(e) => onColorRuleChange(e.target.value as WordCloudSettings['colorRule'])}
           >
-            <option value="frequency">頻度ベース</option>
-            <option value="pos">品詞ベース</option>
-            <option value="scheme">単語ベース</option>
+            <option value="frequency">{t('colorRule.frequency')}</option>
+            <option value="pos">{t('colorRule.pos')}</option>
+            <option value="scheme">{t('colorRule.scheme')}</option>
           </select>
           <select
             className="aspect-ratio-select"
@@ -252,7 +252,7 @@ export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPrev
           >
             {ASPECT_RATIOS.map((ratio) => (
               <option key={ratio.id} value={ratio.id}>
-                {ratio.label}
+                {t(ratio.labelKey)}
               </option>
             ))}
           </select>
@@ -273,7 +273,7 @@ export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPrev
         ref={wrapperRef}
         style={{
           aspectRatio: `${aspectRatio}`,
-          height: 'auto', // Let aspect-ratio control the height
+          height: 'auto',
         }}
       >
         <svg
@@ -281,11 +281,11 @@ export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPrev
           className="preview-canvas"
           viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
           role="img"
-          aria-label="日本語ワードクラウド"
+          aria-label={t('preview.ariaLabel')}
         />
 
         {isCalculating && (
-          <div className="preview-message">レイアウトを計算しています...</div>
+          <div className="preview-message">{t('preview.calculating')}</div>
         )}
 
         {!isCalculating && placeholderMessage && (

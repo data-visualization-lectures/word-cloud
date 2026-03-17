@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
-import '../App.css' // Re-using main CSS or should create component specific? Using global for now for modal styles if they exist, or inline.
+import '../App.css'
+import { useI18n } from '../i18n'
 
 interface SaveProjectModalProps {
     isOpen: boolean
@@ -16,6 +17,7 @@ export function SaveProjectModal({
     initialName = '',
     thumbnailBlob,
 }: SaveProjectModalProps) {
+    const { t } = useI18n()
     const [name, setName] = useState(initialName)
     const [isSaving, setIsSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -50,14 +52,13 @@ export function SaveProjectModal({
             await onSave(name)
             onClose()
         } catch (err) {
-            setError('保存に失敗しました。')
+            setError(t('saveModal.saveFailed'))
             console.error(err)
         } finally {
             setIsSaving(false)
         }
     }
 
-    // Handle escape key via native dialog behavior implicitly, but ensure sync with isOpen
     const handleCancel = () => {
         onClose()
     }
@@ -67,7 +68,7 @@ export function SaveProjectModal({
     return (
         <div className="modal-overlay">
             <div className="modal-content" role="dialog" aria-modal="true">
-                <h2>プロジェクトを保存</h2>
+                <h2>{t('saveModal.title')}</h2>
                 <form onSubmit={handleSubmit}>
                     {thumbnailUrl && (
                         <div className="modal-thumbnail-preview">
@@ -76,13 +77,13 @@ export function SaveProjectModal({
                     )}
 
                     <div className="form-group">
-                        <label htmlFor="project-name">プロジェクト名</label>
+                        <label htmlFor="project-name">{t('saveModal.nameLabel')}</label>
                         <input
                             id="project-name"
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="プロジェクト名を入力"
+                            placeholder={t('saveModal.namePlaceholder')}
                             required
                             autoFocus
                         />
@@ -92,10 +93,10 @@ export function SaveProjectModal({
 
                     <div className="modal-actions">
                         <button type="button" onClick={handleCancel} disabled={isSaving} className="button-secondary">
-                            キャンセル
+                            {t('saveModal.cancel')}
                         </button>
                         <button type="submit" disabled={isSaving || !name.trim()} className="button-primary">
-                            {isSaving ? '保存中...' : '保存'}
+                            {isSaving ? t('saveModal.saving') : t('saveModal.save')}
                         </button>
                     </div>
                 </form>

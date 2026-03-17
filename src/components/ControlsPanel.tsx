@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import noUiSlider, { type API as NoUiSliderInstance, PipsMode } from 'nouislider'
 import type { WordCloudSettings } from '../types'
+import { useI18n } from '../i18n'
+import type { TranslationKey } from '../i18n'
 
 interface ControlsPanelProps {
   text: string
@@ -22,10 +24,11 @@ const MAX_WORDS_MAX = 400
 const MAX_WORDS_STEP = 10
 const PADDING_MIN = 0
 const PADDING_MAX = 20
-const ROTATION_PRESETS = [
-  { id: 'none', label: '回転なし', angles: [0] },
-  { id: 'light', label: '軽め（-30°〜30°）', angles: [-30, -15, 0, 15, 30] },
-  { id: 'wide', label: 'ランダム（-60°〜60°）', angles: [-60, -30, 0, 30, 60] },
+
+const ROTATION_PRESETS: { id: string; labelKey: TranslationKey; angles: number[] }[] = [
+  { id: 'none', labelKey: 'controls.rotationNone', angles: [0] },
+  { id: 'light', labelKey: 'controls.rotationLight', angles: [-30, -15, 0, 15, 30] },
+  { id: 'wide', labelKey: 'controls.rotationWide', angles: [-60, -30, 0, 30, 60] },
 ]
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
 const arraysEqual = (a: number[], b: number[]) => {
@@ -45,6 +48,7 @@ export const ControlsPanel = ({
   showBoundingBoxes,
   onShowBoundingBoxesChange,
 }: ControlsPanelProps) => {
+  const { t } = useI18n()
   const [isTextPanelOpen, setIsTextPanelOpen] = useState(true)
   const [isStopwordsPanelOpen, setIsStopwordsPanelOpen] = useState(false)
   const [isAdvancedSettingsOpen, setIsAdvancedSettingsOpen] = useState(false)
@@ -90,7 +94,7 @@ export const ControlsPanel = ({
       }
     }
     reader.onerror = () => {
-      alert('ファイルの読み込みに失敗しました。')
+      alert(t('controls.fileReadError'))
     }
     reader.readAsText(file, 'UTF-8')
     // Reset input so the same file can be uploaded again
@@ -124,16 +128,16 @@ export const ControlsPanel = ({
     const { value } = event.target
     setMaxWordsInput(value)
     if (!value) {
-      setMaxWordsError('値を入力してください。')
+      setMaxWordsError(t('controls.enterValue'))
       return
     }
     const numericValue = Number(value)
     if (Number.isNaN(numericValue)) {
-      setMaxWordsError('数値で入力してください。')
+      setMaxWordsError(t('controls.enterNumber'))
       return
     }
     if (numericValue < MAX_WORDS_MIN || numericValue > MAX_WORDS_MAX) {
-      setMaxWordsError(`${MAX_WORDS_MIN}〜${MAX_WORDS_MAX}の範囲で入力してください。`)
+      setMaxWordsError(t('controls.maxWordsRange', { min: MAX_WORDS_MIN, max: MAX_WORDS_MAX }))
       return
     }
     setMaxWordsError(null)
@@ -283,13 +287,13 @@ export const ControlsPanel = ({
     <section className="controls-panel">
       <h1>Word Cloud</h1>
       <p className="panel-description">
-        テキストを貼り付けて「生成ボタン」を押すと、形態素解析を行い Word Cloud / Word Bubble を生成します。
+        {t('controls.description')}
       </p>
 
       <div className="form-section text-input-section">
         <div className="field-label-row">
           <label className="field-label" htmlFor="text-input">
-            テキスト入力
+            {t('controls.textInput')}
           </label>
           <button
             type="button"
@@ -305,7 +309,7 @@ export const ControlsPanel = ({
           <div id="text-accordion-panel" className="accordion-panel">
             <div style={{ marginBottom: '0.5rem' }}>
               <label htmlFor="file-upload" className="file-upload-label">
-                📁 ファイルを選択
+                📁 {t('controls.selectFile')}
               </label>
               <input
                 id="file-upload"
@@ -320,15 +324,15 @@ export const ControlsPanel = ({
               className="textarea"
               value={text}
               onChange={handleTextareaChange}
-              placeholder="文章を入力してください"
+              placeholder={t('controls.placeholder')}
               rows={10}
             />
             <div className="input-actions">
               <p className="field-hint">
-                語数: <strong>{tokenCount}</strong>
+                {t('controls.wordCount')}: <strong>{tokenCount}</strong>
               </p>
               <button type="button" className="generate-button" onClick={handleGenerateClick}>
-                生成する
+                {t('controls.generate')}
               </button>
             </div>
           </div>
@@ -338,7 +342,7 @@ export const ControlsPanel = ({
       <div className="form-section">
         <div className="field-label-row">
           <label className="field-label" htmlFor="stopwords">
-            ストップワード
+            {t('controls.stopwords')}
           </label>
           <button
             type="button"
@@ -359,7 +363,7 @@ export const ControlsPanel = ({
               onChange={handleStopwordsChange}
               rows={8}
             />
-            <p className="field-hint">改行またはカンマ区切りで入力。正規化して比較します。</p>
+            <p className="field-hint">{t('controls.stopwordsHint')}</p>
           </div>
         )}
       </div>
@@ -367,7 +371,7 @@ export const ControlsPanel = ({
       <div className="form-section">
         <div className="field-label-row">
           <label className="field-label">
-            詳細設定
+            {t('controls.advancedSettings')}
           </label>
           <button
             type="button"
@@ -383,7 +387,7 @@ export const ControlsPanel = ({
           <div id="advanced-settings-panel" className="accordion-panel">
             <div className="form-grid">
               <label className="field-label" htmlFor="max-words">
-                最大語数
+                {t('controls.maxWords')}
               </label>
               <div className="input-with-slider">
                 <div className="nouislider-control" ref={maxWordsSliderRef} />
@@ -398,10 +402,10 @@ export const ControlsPanel = ({
                 />
               </div>
               <p className={`field-hint ${maxWordsError ? 'error' : ''}`}>
-                {maxWordsError ?? `${MAX_WORDS_MIN}〜${MAX_WORDS_MAX}語の範囲で調整できます（${MAX_WORDS_STEP}語刻み）。`}
+                {maxWordsError ?? t('controls.maxWordsHint', { min: MAX_WORDS_MIN, max: MAX_WORDS_MAX, step: MAX_WORDS_STEP })}
               </p>
 
-              <label className="field-label">フォントサイズ</label>
+              <label className="field-label">{t('controls.fontSize')}</label>
               <div className="input-with-slider">
                 <div className="nouislider-control" ref={fontSizeSliderRef} />
               </div>
@@ -413,7 +417,7 @@ export const ControlsPanel = ({
                   value={settings.fontSizeRange[0]}
                   onChange={(event) => handleFontSizeChange(0, Number(event.target.value))}
                 />
-                <span className="range-separator">〜</span>
+                <span className="range-separator">{t('controls.rangeSeparator')}</span>
                 <input
                   type="number"
                   min={Math.min(FONT_MAX_LIMIT, settings.fontSizeRange[0] + 4)}
@@ -423,12 +427,12 @@ export const ControlsPanel = ({
                 />
               </div>
               <p className="field-hint">
-                {FONT_MIN_LIMIT}〜{FONT_MAX_LIMIT}pt のあいだで、最小と最大は 4pt 以上離す必要があります。
+                {t('controls.fontSizeHint', { min: FONT_MIN_LIMIT, max: FONT_MAX_LIMIT })}
               </p>
 
 
               <label className="field-label" htmlFor="debug-bounding-boxes">
-                デバッグ表示
+                {t('controls.debug')}
               </label>
               <label className="checkbox-field">
                 <input
@@ -437,13 +441,13 @@ export const ControlsPanel = ({
                   checked={showBoundingBoxes}
                   onChange={(event) => onShowBoundingBoxesChange(event.target.checked)}
                 />
-                バウンディングボックス
+                {t('controls.boundingBoxes')}
               </label>
 
 
 
               <label className="field-label" htmlFor="spiral">
-                レイアウト
+                {t('controls.layout')}
               </label>
               <select
                 id="spiral"
@@ -452,12 +456,12 @@ export const ControlsPanel = ({
                   onSettingsChange({ spiral: event.target.value as WordCloudSettings['spiral'] })
                 }
               >
-                <option value="archimedean">アーキメディアン</option>
-                <option value="rectangular">矩形</option>
+                <option value="archimedean">{t('controls.archimedean')}</option>
+                <option value="rectangular">{t('controls.rectangular')}</option>
               </select>
 
               <label className="field-label" htmlFor="rotation">
-                回転
+                {t('controls.rotation')}
               </label>
               <select
                 id="rotation"
@@ -471,13 +475,13 @@ export const ControlsPanel = ({
               >
                 {ROTATION_PRESETS.map((preset) => (
                   <option key={preset.id} value={preset.id}>
-                    {preset.label}
+                    {t(preset.labelKey)}
                   </option>
                 ))}
               </select>
 
               <label className="field-label" htmlFor="padding">
-                単語間隔
+                {t('controls.wordSpacing')}
               </label>
               <div className="input-with-slider">
                 <div className="nouislider-control" ref={paddingSliderRef} />
@@ -491,7 +495,7 @@ export const ControlsPanel = ({
                 />
               </div>
               <p className="field-hint">
-                {PADDING_MIN}〜{PADDING_MAX}px の範囲でスライダーまたは直接入力できます。
+                {t('controls.wordSpacingHint', { min: PADDING_MIN, max: PADDING_MAX })}
               </p>
             </div>
           </div>

@@ -8,15 +8,18 @@ import { useProject } from './hooks/useProject'
 import { blobToBase64 } from './lib/image-utils'
 import { api } from './lib/api'
 import { DEFAULT_COLOR_SCHEME_ID } from './constants/colors'
-import { DEFAULT_JA_STOPWORDS, SAMPLE_TEXT } from './constants/stopwords'
+import { DEFAULT_JA_STOPWORDS } from './constants/stopwords'
 import { useKuromojiTokenizer } from './hooks/useKuromojiTokenizer'
 import { computeWordFrequencies, parseStopwords } from './lib/textProcessing'
+import { useI18n } from './i18n'
+import type { TranslationKey } from './i18n'
 import type { ViewMode, WordCloudSettings, ProjectMeta } from './types'
 
 const defaultStopwords = DEFAULT_JA_STOPWORDS.join('\n')
 
 function App() {
-  const [text, setText] = useState(SAMPLE_TEXT)
+  const { t } = useI18n()
+  const [text, setText] = useState(t('sampleText'))
   const [stopwordsText, setStopwordsText] = useState(defaultStopwords)
   const [settings, setSettings] = useState<WordCloudSettings>({
     maxWords: 120,
@@ -102,11 +105,6 @@ function App() {
     if (!projectId) return
     if (currentProject && currentProject.id === projectId) return // すでにロード済み
 
-    // 認証待ち: window.datavizAuth がない場合は少し待つ必要があるかもしれないが、
-    // dataviz-auth-client.js は DOMContentLoaded で初期化し、セッションがあれば即 window.datavizAuth に入れる。
-    // ただしタイミング依存があるため、リトライロジックか、dataviz-auth-client側のイベントがあると良いが、
-    // ここではポーリングで待機する簡易実装とする。
-
     const tryLoad = async () => {
       // @ts-ignore
       const sb = window.datavizSupabase
@@ -117,16 +115,9 @@ function App() {
 
       try {
         const data = await loadProject(projectId)
-        // Load successful
         setText(data.text)
         setStopwordsText(data.stopwordsText)
         setSettings(data.settings)
-
-        // メタデータとしてIDだけセット（名前などは取得できてないため仮）
-        // GET /api/projects/[id] は本文だけ返すため、メタデータ(name)が不明。
-        // これを解決するには一覧を取るか、APIでメタデータも返すようにするかだが、
-        // 一旦仮の名前を設定し、保存時に更新することで対応、あるいは一覧から探す。
-        // ここではAPIクライアントにメタデータ取得機能がないため、一覧から探す。
 
         try {
           const list = await api.listProjects('word-cloud')
@@ -134,13 +125,11 @@ function App() {
           if (meta) {
             setCurrentProject(meta)
           } else {
-            // リストにない（他人のプロジェクト？）場合はIDのみ保持
             setCurrentProject({
               id: projectId, name: 'Imported Project', app_name: 'word-cloud', created_at: '', updated_at: ''
             })
           }
         } catch {
-          // リスト取得失敗時は仮セット
           setCurrentProject({
             id: projectId, name: 'Loaded Project', app_name: 'word-cloud', created_at: '', updated_at: ''
           })
@@ -151,13 +140,10 @@ function App() {
           stopwords: new Set(parseStopwords(data.stopwordsText)),
         })
 
-        // URLからクエリパラメータを削除（オプション）
-        // window.history.replaceState({}, '', window.location.pathname)
-
         return true
       } catch (e) {
         console.error("Failed to load project from URL", e)
-        return true // エラーでもリトライ終了
+        return true
       }
     }
 
@@ -166,12 +152,11 @@ function App() {
       if (done) clearInterval(intervalId)
     }, 500)
 
-    // 10秒でタイムアウト
     setTimeout(() => clearInterval(intervalId), 10000)
 
     return () => clearInterval(intervalId)
 
-  }, []) // 初回マウント時のみチェック（依存配列空でOK、内部で条件分岐）
+  }, [])
 
 
   const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
@@ -179,11 +164,8 @@ function App() {
     if (header && (header as any).showMessage) {
       (header as any).showMessage(message, type)
     } else {
-      // Fallback
       if (type === 'error') console.error(message)
       else console.log(message)
-      // Only fallback to alert for critical errors if header missing? 
-      // User requested "Integrate into toolbar", so reliance on header is expected.
     }
   }
 
@@ -197,26 +179,24 @@ function App() {
       setText(data.text)
       setStopwordsText(data.stopwordsText)
       setSettings(data.settings)
-      // Update metadata
       setCurrentProject(project)
 
-      // Auto-generate to show the cloud
       setGeneratedInputs({
         text: data.text,
         stopwords: new Set(parseStopwords(data.stopwordsText)),
       })
 
       setIsLoadModalOpen(false)
-      showToast(`プロジェクト "${project.name}" を読み込みました`, 'success')
+      showToast(t('toast.projectLoaded', { name: project.name }), 'success')
     } catch (e) {
       console.error(e)
-      showToast('プロジェクトの読み込みに失敗しました', 'error')
+      showToast(t('toast.projectLoadFailed'), 'error')
     }
   }
 
   const handleSaveClick = async () => {
     if (!generatedInputs) {
-      showToast('保存する前にワードクラウドを生成してください。', 'error')
+      showToast(t('toast.generateFirst'), 'error')
       return
     }
 
@@ -225,17 +205,15 @@ function App() {
       const base64 = blob ? await blobToBase64(blob) : undefined
 
       if (currentProject) {
-        // Update existing project
-        if (!confirm(`プロジェクト "${currentProject.name}" を上書き保存しますか？`)) return
+        if (!confirm(t('confirm.overwrite', { name: currentProject.name }))) return
 
         await updateCurrentProject({
           name: currentProject.name,
           data: { text, stopwordsText, settings },
           thumbnail: base64
         })
-        showToast('保存しました', 'success')
+        showToast(t('toast.saved'), 'success')
       } else {
-        // Create new project
         const today = new Date()
         const year = today.getFullYear()
         const month = String(today.getMonth() + 1).padStart(2, '0')
@@ -247,7 +225,7 @@ function App() {
       }
     } catch (e) {
       console.error(e)
-      showToast('保存処理中にエラーが発生しました。', 'error')
+      showToast(t('toast.saveError'), 'error')
     }
   }
 
@@ -260,26 +238,25 @@ function App() {
         data: { text, stopwordsText, settings },
         thumbnail: base64
       })
-      showToast('新規プロジェクトとして保存しました', 'success')
+      showToast(t('toast.savedNew'), 'success')
     } catch (e) {
       console.error(e)
-      showToast('保存に失敗しました', 'error')
+      showToast(t('toast.saveFailed'), 'error')
     }
   }
 
   const shouldRender = Boolean(generatedInputs)
 
   const previewStatus = (() => {
-    if (tokenizerError) return tokenizerError
-    if (tokenizerLoading && !tokenizer) return '形態素解析辞書を読み込み中です...'
-    if (!shouldRender) return '生成ボタンを押してください。'
-    if (!generatedInputs?.text.trim()) return 'テキストを入力してください。'
-    if (!wordFrequencies.length) return '抽出できる単語が見つかりません。'
+    if (tokenizerError) return t(tokenizerError as TranslationKey)
+    if (tokenizerLoading && !tokenizer) return t('status.loadingDict')
+    if (!shouldRender) return t('status.pressGenerate')
+    if (!generatedInputs?.text.trim()) return t('status.enterText')
+    if (!wordFrequencies.length) return t('status.noWords')
     return null
   })()
 
   useEffect(() => {
-    // 画面更新時にヘッダーを再設定する
     customElements.whenDefined('dataviz-tool-header').then(() => {
       const header = document.querySelector('dataviz-tool-header');
       if (header) {
@@ -292,12 +269,12 @@ function App() {
           },
           buttons: [
             {
-              label: 'プロジェクトの読込',
+              label: t('header.loadProject'),
               action: handleLoadProjectClick,
               align: 'right'
             },
             {
-              label: 'プロジェクトの保存',
+              label: t('header.saveProject'),
               action: handleSaveClick,
               align: 'right'
             }

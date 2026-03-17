@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import type { ProjectMeta } from '../types'
-// import { blobToBase64 } from '../lib/image-utils' // If needed, but here we just read from API
+import { useI18n } from '../i18n'
 
 interface ProjectListModalProps {
     isOpen: boolean
@@ -10,10 +10,11 @@ interface ProjectListModalProps {
 }
 
 export function ProjectListModal({ isOpen, onClose, onSelect }: ProjectListModalProps) {
+    const { locale, t } = useI18n()
     const [projects, setProjects] = useState<ProjectMeta[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [deleteConfirms, setDeleteConfirms] = useState<Set<string>>(new Set()) // Store IDs pending delete confirmation
+    const [deleteConfirms, setDeleteConfirms] = useState<Set<string>>(new Set())
 
     useEffect(() => {
         if (isOpen) {
@@ -25,12 +26,11 @@ export function ProjectListModal({ isOpen, onClose, onSelect }: ProjectListModal
         setLoading(true)
         setError(null)
         try {
-            // Assuming app_name is 'word-cloud'
             const data = await api.listProjects('word-cloud')
             setProjects(data)
         } catch (err) {
             console.error(err)
-            setError('プロジェクト一覧の取得に失敗しました。')
+            setError(t('projectList.error'))
         } finally {
             setLoading(false)
         }
@@ -39,16 +39,13 @@ export function ProjectListModal({ isOpen, onClose, onSelect }: ProjectListModal
     const handleDeleteClick = (e: React.MouseEvent, id: string) => {
         e.stopPropagation()
         if (deleteConfirms.has(id)) {
-            // Execute delete
             handleDelete(id)
         } else {
-            // First click: Request confirmation
             setDeleteConfirms(prev => {
                 const next = new Set(prev)
                 next.add(id)
                 return next
             })
-            // Auto-reset confirmation after 3 seconds
             setTimeout(() => {
                 setDeleteConfirms(prev => {
                     const next = new Set(prev)
@@ -70,19 +67,9 @@ export function ProjectListModal({ isOpen, onClose, onSelect }: ProjectListModal
             })
         } catch (err) {
             console.error(err)
-            alert('削除に失敗しました。')
+            alert(t('projectList.deleteFailed'))
         }
     }
-
-    // Helper to fetch thumbnail URL safely
-    // For the actual image source, the spec says "thumbnail_path": "user_id/uuid.png".
-    // This is likely a STORAGE PATH, not a direct public URL?
-    // Spec says: GET /api/projects/[id]/thumbnail -> Returns PNG binary.
-    // So we can set src={`/api/projects/${p.id}/thumbnail`} BUT we need Auth header.
-    // Standard <img> tag cannot send Auth header.
-    // So we have to fetch blob and create Object URL for each, or use a component that handles this.
-
-    // For simplicity MVP, let's create a sub-component <ProjectThumbnail />
 
     if (!isOpen) return null
 
@@ -90,15 +77,15 @@ export function ProjectListModal({ isOpen, onClose, onSelect }: ProjectListModal
         <div className="modal-overlay">
             <div className="modal-content list-modal" role="dialog" aria-modal="true">
                 <header className="modal-header">
-                    <h2>プロジェクトを開く</h2>
+                    <h2>{t('projectList.title')}</h2>
                     <button onClick={onClose} className="close-button">×</button>
                 </header>
 
-                {loading && <div className="loading-message">読み込み中...</div>}
+                {loading && <div className="loading-message">{t('projectList.loading')}</div>}
                 {error && <div className="error-message">{error}</div>}
 
                 {!loading && projects.length === 0 && (
-                    <div className="empty-message">保存されたプロジェクトはありません。</div>
+                    <div className="empty-message">{t('projectList.empty')}</div>
                 )}
 
                 <div className="project-grid">
@@ -114,15 +101,15 @@ export function ProjectListModal({ isOpen, onClose, onSelect }: ProjectListModal
                             <div className="project-info">
                                 <h3 className="project-title">{project.name}</h3>
                                 <time className="project-date">
-                                    {new Date(project.updated_at).toLocaleString('ja-JP')}
+                                    {new Date(project.updated_at).toLocaleString(locale === 'ja' ? 'ja-JP' : 'en-US')}
                                 </time>
                             </div>
                             <button
                                 className={`delete-button ${deleteConfirms.has(project.id) ? 'confirm' : ''}`}
                                 onClick={(e) => handleDeleteClick(e, project.id)}
-                                title="削除"
+                                title={t('projectList.delete')}
                             >
-                                {deleteConfirms.has(project.id) ? '削除?' : '🗑️'}
+                                {deleteConfirms.has(project.id) ? t('projectList.deleteConfirm') : '🗑️'}
                             </button>
                         </div>
                     ))}

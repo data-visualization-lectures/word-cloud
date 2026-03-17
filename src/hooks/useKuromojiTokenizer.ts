@@ -43,7 +43,7 @@ const ensureKuromojiScript = () => {
 
     const handleError = () => {
       console.error('[useKuromojiTokenizer] script failed to load', KUROMOJI_SCRIPT_SRC)
-      reject(new Error('kuromojiスクリプトの読み込みに失敗しました。'))
+      reject(new Error('kuromoji.scriptFailed'))
     }
 
     if (!script) {
@@ -87,7 +87,7 @@ export const useKuromojiTokenizer = (): KuromojiState => {
           const kuromojiLib = window.kuromoji
 
           if (!kuromojiLib) {
-            setError('kuromojiのスクリプトが読み込まれていません。')
+            setError('kuromoji.scriptNotLoaded')
             setLoading(false)
             return
           }
@@ -96,7 +96,7 @@ export const useKuromojiTokenizer = (): KuromojiState => {
             if (!isMounted) return
 
             if (err || !loadedTokenizer) {
-              setError(err?.message ?? '辞書の読み込みに失敗しました。')
+              setError(err?.message ?? 'kuromoji.dictFailed')
               setLoading(false)
               return
             }
@@ -107,7 +107,7 @@ export const useKuromojiTokenizer = (): KuromojiState => {
         })
         .catch((err) => {
           if (!isMounted) return
-          const message = err instanceof Error ? err.message : 'kuromojiの読み込みに失敗しました。'
+          const message = err instanceof Error ? err.message : 'kuromoji.loadFailed'
           setError(message)
           setLoading(false)
         })
