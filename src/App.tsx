@@ -1,19 +1,16 @@
-import { useMemo, useState, useRef, useEffect } from 'react'
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import './App.css'
 import { ControlsPanel } from './components/ControlsPanel'
 import { WordCloudPreview, type WordCloudPreviewHandle } from './components/WordCloudPreview'
-import { SaveProjectModal } from './components/SaveProjectModal'
-import { ProjectListModal } from './components/ProjectListModal'
 import { useProject } from './hooks/useProject'
 import { blobToBase64 } from './lib/image-utils'
-import { api } from './lib/api'
 import { DEFAULT_COLOR_SCHEME_ID } from './constants/colors'
 import { DEFAULT_JA_STOPWORDS } from './constants/stopwords'
 import { useKuromojiTokenizer } from './hooks/useKuromojiTokenizer'
 import { computeWordFrequencies, parseStopwords } from './lib/textProcessing'
 import { useI18n } from './i18n'
 import type { TranslationKey } from './i18n'
-import type { ViewMode, WordCloudSettings, ProjectMeta } from './types'
+import type { ViewMode, WordCloudSettings } from './types'
 
 const defaultStopwords = DEFAULT_JA_STOPWORDS.join('\n')
 
@@ -34,17 +31,11 @@ function App() {
 
   // Project Management State
   const {
-    currentProject,
-    setCurrentProject,
-    loadProject,
-    createNewProject,
-    updateCurrentProject
+    loadProject
   } = useProject()
 
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
-  const [saveModalInitialName, setSaveModalInitialName] = useState('')
-  const [isLoadModalOpen, setIsLoadModalOpen] = useState(false)
-  const [thumbnailForSave, setThumbnailForSave] = useState<Blob | null>(null)
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
+  const [currentProjectName, setCurrentProjectName] = useState<string>('')
 
   const previewRef = useRef<WordCloudPreviewHandle>(null)
 
@@ -103,7 +94,7 @@ function App() {
     const projectId = params.get('project_id')
 
     if (!projectId) return
-    if (currentProject && currentProject.id === projectId) return // すでにロード済み
+    if (currentProjectId && currentProjectId === projectId) return // すでにロード済み
 
     const tryLoad = async () => {
       // @ts-ignore
@@ -119,21 +110,8 @@ function App() {
         setStopwordsText(data.stopwordsText)
         setSettings(data.settings)
 
-        try {
-          const list = await api.listProjects('word-cloud')
-          const meta = list.find(p => p.id === projectId)
-          if (meta) {
-            setCurrentProject(meta)
-          } else {
-            setCurrentProject({
-              id: projectId, name: 'Imported Project', app_name: 'word-cloud', created_at: '', updated_at: ''
-            })
-          }
-        } catch {
-          setCurrentProject({
-            id: projectId, name: 'Loaded Project', app_name: 'word-cloud', created_at: '', updated_at: ''
-          })
-        }
+        setCurrentProjectId(projectId)
+        setCurrentProjectName('Loaded Project')
 
         setGeneratedInputs({
           text: data.text,
@@ -169,81 +147,49 @@ function App() {
     }
   }
 
-  const handleLoadProjectClick = () => {
-    setIsLoadModalOpen(true)
-  }
+  const getProjectState = useCallback(() => {
+    return { text, stopwordsText, settings }
+  }, [text, stopwordsText, settings])
 
-  const handleProjectSelect = async (project: ProjectMeta) => {
-    try {
-      const data = await loadProject(project.id)
-      setText(data.text)
-      setStopwordsText(data.stopwordsText)
-      setSettings(data.settings)
-      setCurrentProject(project)
+  const getThumbnailDataUri = useCallback(async () => {
+    const blob = await previewRef.current?.getThumbnailBlob() ?? null
+    if (!blob) return null
+    return await blobToBase64(blob) as string
+  }, [])
 
-      setGeneratedInputs({
-        text: data.text,
-        stopwords: new Set(parseStopwords(data.stopwordsText)),
-      })
-
-      setIsLoadModalOpen(false)
-      showToast(t('toast.projectLoaded', { name: project.name }), 'success')
-    } catch (e) {
-      console.error(e)
-      showToast(t('toast.projectLoadFailed'), 'error')
+  const handleLoadProjectClick = useCallback(() => {
+    const header = document.querySelector('dataviz-tool-header') as any
+    if (header) {
+      header.showLoadModal()
     }
-  }
+  }, [])
 
-  const handleSaveClick = async () => {
+  const handleSaveClick = useCallback(async () => {
     if (!generatedInputs) {
       showToast(t('toast.generateFirst'), 'error')
       return
     }
 
     try {
-      const blob = await previewRef.current?.getThumbnailBlob() ?? null
-      const base64 = blob ? await blobToBase64(blob) : undefined
-
-      if (currentProject) {
-        if (!confirm(t('confirm.overwrite', { name: currentProject.name }))) return
-
-        await updateCurrentProject({
-          name: currentProject.name,
-          data: { text, stopwordsText, settings },
-          thumbnail: base64
-        })
-        showToast(t('toast.saved'), 'success')
-      } else {
-        const today = new Date()
-        const year = today.getFullYear()
-        const month = String(today.getMonth() + 1).padStart(2, '0')
-        const day = String(today.getDate()).padStart(2, '0')
-        setSaveModalInitialName(`${year}-${month}-${day}`)
-
-        setThumbnailForSave(blob)
-        setIsSaveModalOpen(true)
+      const header = document.querySelector('dataviz-tool-header') as any
+      if (!header) {
+        showToast(t('toast.saveError'), 'error')
+        return
       }
+
+      const thumbnailDataUri = await getThumbnailDataUri()
+
+      header.showSaveModal({
+        name: currentProjectName || '',
+        data: getProjectState(),
+        thumbnailDataUri,
+        existingProjectId: currentProjectId || null,
+      })
     } catch (e) {
       console.error(e)
       showToast(t('toast.saveError'), 'error')
     }
-  }
-
-  const handleSaveModalSubmit = async (name: string) => {
-    const base64 = thumbnailForSave ? await blobToBase64(thumbnailForSave) : undefined
-    try {
-      await createNewProject({
-        name,
-        app_name: 'word-cloud',
-        data: { text, stopwordsText, settings },
-        thumbnail: base64
-      })
-      showToast(t('toast.savedNew'), 'success')
-    } catch (e) {
-      console.error(e)
-      showToast(t('toast.saveFailed'), 'error')
-    }
-  }
+  }, [generatedInputs, currentProjectName, currentProjectId, getThumbnailDataUri, getProjectState, t, showToast])
 
   const shouldRender = Boolean(generatedInputs)
 
@@ -258,9 +204,9 @@ function App() {
 
   useEffect(() => {
     customElements.whenDefined('dataviz-tool-header').then(() => {
-      const header = document.querySelector('dataviz-tool-header');
+      const header = document.querySelector('dataviz-tool-header') as any;
       if (header) {
-        // @ts-ignore
+        // Configure UI
         header.setConfig({
           logo: {
             type: 'text',
@@ -280,9 +226,31 @@ function App() {
             }
           ]
         })
+
+        // Configure project management
+        header.setProjectConfig({
+          appName: 'word-cloud',
+          onProjectLoad: async (projectData: any) => {
+            try {
+              setText(projectData.text)
+              setStopwordsText(projectData.stopwordsText)
+              setSettings(projectData.settings)
+              setGeneratedInputs({
+                text: projectData.text,
+                stopwords: new Set(parseStopwords(projectData.stopwordsText)),
+              })
+            } catch (e) {
+              console.error('Failed to restore project data:', e)
+            }
+          },
+          onProjectSave: (meta: any) => {
+            setCurrentProjectId(meta.id)
+            setCurrentProjectName(meta.name)
+          },
+        })
       }
     })
-  }, [handleLoadProjectClick, handleSaveClick]);
+  }, [handleLoadProjectClick, handleSaveClick, t]);
 
   return (
     <>
@@ -313,20 +281,6 @@ function App() {
             onColorRuleChange={(rule) => handleSettingsChange({ colorRule: rule })}
           />
         </main>
-
-        <SaveProjectModal
-          isOpen={isSaveModalOpen}
-          onClose={() => setIsSaveModalOpen(false)}
-          onSave={handleSaveModalSubmit}
-          initialName={saveModalInitialName}
-          thumbnailBlob={thumbnailForSave}
-        />
-
-        <ProjectListModal
-          isOpen={isLoadModalOpen}
-          onClose={() => setIsLoadModalOpen(false)}
-          onSelect={handleProjectSelect}
-        />
       </div>
     </>
   )
