@@ -19,6 +19,12 @@
   <script src="https://auth.dataviz.jp/lib/supabase.js"></script>
   <script src="https://auth.dataviz.jp/lib/dataviz-auth-client.js"></script>
   <script src="https://auth.dataviz.jp/lib/dataviz-tool-header.js" defer></script>
+  <!-- Override API endpoint to use the new API -->
+  <script>
+    // dataviz-auth-client.js might set window.datavizApiUrl to auth.dataviz.jp
+    // but the new project management API requires api.dataviz.jp
+    window.datavizApiUrl = 'https://api.dataviz.jp'
+  </script>
 </head>
 
 <body>
