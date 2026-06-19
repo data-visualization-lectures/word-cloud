@@ -16,6 +16,10 @@ const translations = {
   'status.noWords': { ja: '抽出できる単語が見つかりません。', en: 'No words found.' },
   'header.loadProject': { ja: 'プロジェクトの読込', en: 'Load Project' },
   'header.saveProject': { ja: 'プロジェクトの保存', en: 'Save Project' },
+  'processing.projectList': { ja: 'プロジェクト一覧を読み込み中です', en: 'Loading project list...' },
+  'processing.projectLoad': { ja: 'プロジェクトを読み込み中です', en: 'Loading project...' },
+  'processing.projectSave': { ja: 'プロジェクトを保存中です', en: 'Saving project...' },
+  'processing.savePrep': { ja: '保存準備中です', en: 'Preparing save...' },
 
   // --- ControlsPanel.tsx ---
   'controls.description': {

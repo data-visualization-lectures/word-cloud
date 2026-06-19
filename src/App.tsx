@@ -47,6 +47,50 @@ function App() {
     stopwords: Set<string>
   } | null>(null)
 
+  const showToast = useCallback((message: string, type: 'info' | 'success' | 'error' = 'info', duration = 3000) => {
+    const header = document.querySelector('dataviz-tool-header')
+    if (header && (header as any).showMessage) {
+      (header as any).showMessage(message, type, duration)
+    } else {
+      if (type === 'error') console.error(message)
+      else console.log(message)
+    }
+  }, [])
+
+  const showProcessingToast = useCallback((message: string) => {
+    showToast(message, 'info', 5000)
+  }, [showToast])
+
+  const installHeaderProcessingToasts = useCallback((header: any) => {
+    if (!header || header.__dvzNativeProjectProcessingToasts === '1' || header.__dvzProcessingToastsInstalled === '1') return
+
+    if (typeof header.showLoadModal === 'function') {
+      const originalShowLoadModal = header.showLoadModal.bind(header)
+      header.showLoadModal = (...args: any[]) => {
+        showProcessingToast(t('processing.projectList'))
+        return originalShowLoadModal(...args)
+      }
+    }
+
+    if (typeof header.loadProject === 'function') {
+      const originalLoadProject = header.loadProject.bind(header)
+      header.loadProject = (...args: any[]) => {
+        showProcessingToast(t('processing.projectLoad'))
+        return originalLoadProject(...args)
+      }
+    }
+
+    if (typeof header.saveProject === 'function') {
+      const originalSaveProject = header.saveProject.bind(header)
+      header.saveProject = (...args: any[]) => {
+        showProcessingToast(t('processing.projectSave'))
+        return originalSaveProject(...args)
+      }
+    }
+
+    header.__dvzProcessingToastsInstalled = '1'
+  }, [showProcessingToast, t])
+
   const stopwordsSet = useMemo(() => {
     const parsed = parseStopwords(stopwordsText)
     return new Set(parsed)
@@ -105,6 +149,7 @@ function App() {
       if (!data.session) return false
 
       try {
+        showProcessingToast(t('processing.projectLoad'))
         const data = await loadProject(projectId)
         setText(data.text)
         setStopwordsText(data.stopwordsText)
@@ -134,18 +179,7 @@ function App() {
 
     return () => clearInterval(intervalId)
 
-  }, [])
-
-
-  const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
-    const header = document.querySelector('dataviz-tool-header')
-    if (header && (header as any).showMessage) {
-      (header as any).showMessage(message, type)
-    } else {
-      if (type === 'error') console.error(message)
-      else console.log(message)
-    }
-  }
+  }, [currentProjectId, loadProject, showProcessingToast, t])
 
   const getProjectState = useCallback(() => {
     return { text, stopwordsText, settings }
@@ -177,6 +211,7 @@ function App() {
         return
       }
 
+      showProcessingToast(t('processing.savePrep'))
       const thumbnailDataUri = await getThumbnailDataUri()
 
       header.showSaveModal({
@@ -189,7 +224,7 @@ function App() {
       console.error(e)
       showToast(t('toast.saveError'), 'error')
     }
-  }, [generatedInputs, currentProjectName, currentProjectId, getThumbnailDataUri, getProjectState, t, showToast])
+  }, [generatedInputs, currentProjectName, currentProjectId, getThumbnailDataUri, getProjectState, t, showToast, showProcessingToast])
 
   const shouldRender = Boolean(generatedInputs)
 
@@ -206,6 +241,8 @@ function App() {
     customElements.whenDefined('dataviz-tool-header').then(() => {
       const header = document.querySelector('dataviz-tool-header') as any;
       if (header) {
+        installHeaderProcessingToasts(header)
+
         // Configure UI
         header.setConfig({
           logo: {
@@ -250,7 +287,7 @@ function App() {
         })
       }
     })
-  }, [handleLoadProjectClick, handleSaveClick, t]);
+  }, [handleLoadProjectClick, handleSaveClick, installHeaderProcessingToasts, t]);
 
   return (
     <>
