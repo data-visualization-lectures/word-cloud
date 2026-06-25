@@ -39,5 +39,5 @@ http://localhost:5173/?auth_debug
 
 アプリケーションは以下のURLパラメータをサポートしています。
 
-- `project_id`: 指定されたUUIDのプロジェクトを自動的にサーバーから読み込み、表示します。
-  - 例: `https://word-cloud.dataviz.jp/?project_id=a55cbec0-8338-4656-bf7f-a39dd4873518`
+- `projectId`: 指定されたUUIDのプロジェクトを自動的にサーバーから読み込み、表示します。
+  - 例: `https://word-cloud.dataviz.jp/?projectId=a55cbec0-8338-4656-bf7f-a39dd4873518`

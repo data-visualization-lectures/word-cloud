@@ -122,9 +122,9 @@ function App() {
   // URLからのプロジェクト読み込み
   // 認証(window.datavizAuth)待ちと、tokenizerロード待ちが必要
   useMemo(() => {
-    // URLからproject_idを取得
+    // URLからprojectIdを取得
     const params = new URLSearchParams(window.location.search)
-    const projectIdFromUrl = params.get('project_id')
+    const projectIdFromUrl = params.get('projectId')
 
     // まだ読み込み中でない、かつ tokenizer 準備OKなら
     if (projectIdFromUrl && !tokenizerLoading && !generatedInputs) {
@@ -135,7 +135,7 @@ function App() {
   // URLパラメータ起因のロード処理
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const projectId = params.get('project_id')
+    const projectId = params.get('projectId')
 
     if (!projectId) return
     if (currentProjectId && currentProjectId === projectId) return // すでにロード済み
