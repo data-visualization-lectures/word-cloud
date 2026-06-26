@@ -155,8 +155,10 @@ function App() {
         setStopwordsText(data.stopwordsText)
         setSettings(data.settings)
 
-        setCurrentProjectId(projectId)
-        setCurrentProjectName('Loaded Project')
+        const header = document.querySelector('dataviz-tool-header') as any
+        const context = header?.getProjectContext?.()
+        setCurrentProjectId(context?.canOverwrite ? context.projectId || projectId : null)
+        setCurrentProjectName(context?.projectName || '')
 
         setGeneratedInputs({
           text: data.text,
@@ -267,8 +269,12 @@ function App() {
         // Configure project management
         header.setProjectConfig({
           appName: 'word-cloud',
-          onProjectLoad: async (projectData: any) => {
+          toolName: 'ワードクラウド',
+          toolNameEn: 'Word Cloud',
+          onProjectLoad: async (projectData: any, meta: any = {}) => {
             try {
+              setCurrentProjectId(meta.canOverwrite ? meta.projectId : null)
+              setCurrentProjectName(meta.projectName || '')
               setText(projectData.text)
               setStopwordsText(projectData.stopwordsText)
               setSettings(projectData.settings)
