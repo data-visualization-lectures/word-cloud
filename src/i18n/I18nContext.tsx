@@ -9,6 +9,9 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue | null>(null)
 
 function detectLocale(): Locale {
+  const params = new URLSearchParams(window.location.search)
+  const fromQuery = params.get('lang')
+  if (fromQuery === 'ja' || fromQuery === 'en') return fromQuery
   return navigator.language.startsWith('ja') ? 'ja' : 'en'
 }
 
