@@ -167,12 +167,16 @@ const translations = {
   'aspect.landscape': { ja: '横長 (16:9)', en: 'Landscape (16:9)' },
 
   'sampleText': {
-    ja: `生成AIやデータビジュアライゼーションへの注目が高まるなか、テキストデータを素早く把握する手法としてワードクラウドが再評価されています。文章全体を一読しても掴みにくい特徴語が、サイズや色で視覚的に浮かび上がることで、メッセージの核や語彙の偏りを即座に把握できます。
+    ja: `ワードクラウドは、テキストに出てくる語の頻度を、サイズで伝えるチャートです。テキストを貼り付けてワードクラウドを作ると、よく使われている語ほど大きく、あまり使われない語ほど小さく並びます。レポートにワードクラウドを1枚入れるだけで、内容の要点が伝わりやすくなります。スライドでもワードクラウドはよく使われ、長い文章を読ませずに傾向を示せます。
 
-ユーザーローカルのようなWebサービスでは、テキストを貼り付けるだけでリアルタイムに可視化でき、ストップワードの調整やレイアウト変更にも対応しています。本プロジェクトでは、日本語文章を前提に、SVGベースで高解像度に出力できるワードクラウドツールをReactで実装し、レポートやスライドに組み込みやすい形で提供することを目指します。`,
-    en: `As interest in generative AI and data visualization grows, word clouds are being re-evaluated as a quick way to grasp text data. Characteristic words that are hard to catch when reading an entire document stand out visually through size and color, enabling instant comprehension of a message's core and vocabulary distribution.
+同じテキストからワードクラウドを何度か作り直すと、ストップワードや品詞の選び方で印象が変わります。頻度の高い語はワードクラウドの中央で目立ち、頻度の低い語は周囲に小さく残ります。チャートの色合いを頻度に合わせると、語彙の偏りはさらに分かりやすくなります。色合いだけでなくサイズも頻度を表すので、ワードクラウドは全体の要約になります。ストップワードを増やすと、ワードクラウドはさらに読みやすくなります。
 
-This project implements a React-based word cloud tool that generates high-resolution SVG output from Japanese text using morphological analysis, designed for easy embedding in reports and presentations.`,
+データ分析では、まずテキストをワードクラウドで眺め、気になる語をレポートやスライドへ拾っていく流れがよくあります。形態素解析で名詞を取り出し、複合語をまとめてから頻度を数えると、ワードクラウドは資料として使いやすくなります。書き出したワードクラウドをレポートに載せ、スライドにも同じワードクラウドを置けば、メッセージが揃います。配置や余白、タイトル、フォント、レイアウトを整えれば、図解として使えます。ワードバブルに切り替えると、同じテキストの頻度を円のサイズで比較できます。SVGやPNGで書き出せば、レポートにもスライドにも収まります。`,
+    en: `WordCloud shows Text by Frequency quite clearly. Paste Text then WordCloud draws large terms for high Frequency instead. Report uses one WordCloud so Text is easier. Slide uses WordCloud so long Text stays easy.
+
+Same Text makes a new WordCloud after StopWords change. High Frequency stays center in WordCloud itself. Low Frequency stays small around WordCloud itself. Color follows Frequency so Text bias is easier. Size follows Frequency so WordCloud summarizes Text well. Add StopWords and WordCloud becomes easier to read.
+
+Analysis starts with WordCloud of Text then notable terms move into Report or Slide next. MorphologicalAnalysis keeps nouns joins compounds counts Frequency and WordCloud becomes usable as material. Export WordCloud into Report next. Reuse WordCloud on Slide and Text story stays aligned. Layout Title Font then WordBubble compares Frequency by circle Size next. SVG or PNG output fits Report and Slide well.`,
   },
 } as const
 
