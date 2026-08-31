@@ -105,6 +105,9 @@ export const createWordColorScale = (
 
   if (settings.colorRule === 'frequency') {
     const range = getSequentialRange(settings.colorSchemeId, settings.canvasBackground)
+    if (minValue === maxValue) {
+      return () => range[1]
+    }
     const frequencyColorScale = scaleLinear<string>().domain([minValue, maxValue]).range(range)
     return (word: WordFrequency) => frequencyColorScale(word.value)
   }

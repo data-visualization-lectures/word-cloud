@@ -1,6 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { select } from 'd3-selection'
-import { transition } from 'd3-transition'
 import type { ViewMode, WordCloudSettings, WordFrequency } from '../types'
 import { useWordLayout, type LayoutWord } from '../hooks/useWordLayout'
 import { ASPECT_RATIOS } from '../constants/aspectRatios'
@@ -141,22 +140,19 @@ export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPrev
       .attr('font-family', font.cssStack)
       .text(settings.chartSource.trim())
 
-    const anim = transition().duration(500)
     const wordsSelection = svg
       .selectAll<SVGGElement, LayoutWord>('g.word')
       .data(layoutWords, (d) => d?.text ?? '')
 
-    wordsSelection.exit().transition(anim).style('opacity', 0).remove()
+    wordsSelection.exit().remove()
 
     const enter = wordsSelection
       .enter()
       .append('g')
       .attr('class', 'word')
-      .style('opacity', 0)
       .style('cursor', 'pointer')
-      .attr('transform', `translate(${dimensions.width / 2}, ${dimensions.height / 2})`)
 
-    enter.append('circle').attr('r', 0).attr('opacity', 0)
+    enter.append('circle')
     enter.append('rect').attr('class', 'word-bbox')
     enter.append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
 
@@ -186,15 +182,11 @@ export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPrev
         onExcludeWord(d.text)
         setTooltip(null)
       })
-
-    merged
-      .transition(anim)
       .style('opacity', 1)
       .attr('transform', (d) => `translate(${d.x}, ${d.y})`)
 
     merged
       .select<SVGCircleElement>('circle')
-      .transition(anim)
       .attr('r', (d: LayoutWord) => (viewMode === 'bubble' ? d.radius : 0))
       .attr('fill', (d: LayoutWord) => d.color)
       .attr('opacity', viewMode === 'bubble' ? 1 : 0)
@@ -215,7 +207,6 @@ export const WordCloudPreview = forwardRef<WordCloudPreviewHandle, WordCloudPrev
       .select<SVGTextElement>('text')
       .text((d: LayoutWord) => (d.showLabel ? d.text : ''))
       .attr('font-family', font.cssStack)
-      .transition(anim)
       .attr('fill', (d: LayoutWord) => (viewMode === 'bubble' ? (d.textColor ?? '#0f172a') : d.color))
       .attr('font-size', (d: LayoutWord) => d.fontSize)
       .attr('font-weight', (d: LayoutWord) => d.fontWeight)

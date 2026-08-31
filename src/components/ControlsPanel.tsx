@@ -80,7 +80,7 @@ export const ControlsPanel = ({
   const [isTextPanelOpen, setIsTextPanelOpen] = useState(!hasGenerated)
   const [isWordListOpen, setIsWordListOpen] = useState(hasGenerated)
   const [isStopwordsPanelOpen, setIsStopwordsPanelOpen] = useState(false)
-  const [isAnalysisOpen, setIsAnalysisOpen] = useState(hasGenerated)
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false)
   const [isStyleOpen, setIsStyleOpen] = useState(hasGenerated)
   const [isAdvancedSettingsOpen, setIsAdvancedSettingsOpen] = useState(false)
   const [maxWordsInput, setMaxWordsInput] = useState(String(settings.maxWords))
@@ -149,7 +149,6 @@ export const ControlsPanel = ({
     setIsTextPanelOpen(false)
     setIsWordListOpen(true)
     setIsStyleOpen(true)
-    setIsAnalysisOpen(true)
     onGenerate()
   }
 

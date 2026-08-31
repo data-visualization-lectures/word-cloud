@@ -163,9 +163,14 @@ const layoutBubbles = (
   const insets = getCanvasInsets(settings)
   const innerWidth = Math.max(width - insets.left - insets.right, 1)
   const innerHeight = Math.max(height - insets.top - insets.bottom, 1)
+  const rng = mulberry32(settings.layoutSeed || 1)
+  const ordered = [...words].sort((a, b) => {
+    if (b.value !== a.value) return b.value - a.value
+    return rng() - 0.5
+  })
 
   const root = hierarchy<{ children?: WordFrequency[]; text?: string; value?: number; pos?: string }>({
-    children: words,
+    children: ordered,
   }).sum((node) => node.value ?? 0)
 
   const packed = pack<typeof root.data>()
@@ -221,7 +226,6 @@ export const useWordLayout = (
     const values = words.map((word) => word.value)
     const min = Math.min(...values)
     const max = Math.max(...values)
-    if (min === max) return [min, max + 1] as const
     return [min, max] as const
   })()
 
