@@ -1,7 +1,6 @@
 export type Locale = 'ja' | 'en'
 
 const translations = {
-  // --- App.tsx ---
   'toast.projectLoaded': { ja: 'プロジェクト "{name}" を読み込みました', en: 'Loaded project "{name}"' },
   'toast.projectLoadFailed': { ja: 'プロジェクトの読み込みに失敗しました', en: 'Failed to load project' },
   'toast.generateFirst': { ja: '保存する前にワードクラウドを生成してください。', en: 'Please generate a word cloud before saving.' },
@@ -21,18 +20,30 @@ const translations = {
   'processing.projectSave': { ja: 'プロジェクトを保存中です', en: 'Saving project...' },
   'processing.savePrep': { ja: '保存準備中です', en: 'Preparing save...' },
 
-  // --- ControlsPanel.tsx ---
   'controls.description': {
-    ja: 'テキストを貼り付けて「生成ボタン」を押すと、形態素解析を行い Word Cloud / Word Bubble を生成します。',
-    en: 'Paste text and press "Generate" to create a Word Cloud / Word Bubble using morphological analysis.',
+    ja: 'テキストを貼り付けるか頻度表を読み込み、「生成する」を押すと Word Cloud / Word Bubble を作成します。',
+    en: 'Paste text or a frequency table, then press Generate to create a Word Cloud / Word Bubble.',
   },
   'controls.textInput': { ja: 'テキスト入力', en: 'Text Input' },
   'controls.selectFile': { ja: 'ファイルを選択', en: 'Select File' },
   'controls.placeholder': { ja: '文章を入力してください', en: 'Enter your text here' },
+  'controls.csvPlaceholder': {
+    ja: 'word,frequency,pos\nデータ可視化,12,名詞',
+    en: 'word,frequency,pos\ndata visualization,12,noun',
+  },
+  'controls.csvHint': {
+    ja: '1列目が語、2列目が頻度。3列目の品詞は任意です。ヘッダー行は自動判定します。',
+    en: 'Column 1 is the word, column 2 is frequency. POS in column 3 is optional. Headers are detected automatically.',
+  },
   'controls.wordCount': { ja: '語数', en: 'Words' },
   'controls.generate': { ja: '生成する', en: 'Generate' },
+  'controls.inputMode': { ja: '入力', en: 'Input' },
+  'controls.inputModeText': { ja: 'テキスト', en: 'Text' },
+  'controls.inputModeCsv': { ja: '頻度CSV', en: 'Frequency CSV' },
   'controls.stopwords': { ja: 'ストップワード', en: 'Stop Words' },
   'controls.stopwordsHint': { ja: '改行またはカンマ区切りで入力。正規化して比較します。', en: 'Enter one per line or comma-separated.' },
+  'controls.analysis': { ja: '解析', en: 'Analysis' },
+  'controls.style': { ja: 'スタイル', en: 'Style' },
   'controls.advancedSettings': { ja: '詳細設定', en: 'Advanced Settings' },
   'controls.maxWords': { ja: '最大語数', en: 'Max Words' },
   'controls.maxWordsHint': {
@@ -57,7 +68,8 @@ const translations = {
   'controls.archimedean': { ja: 'アーキメディアン', en: 'Archimedean' },
   'controls.rectangular': { ja: '矩形', en: 'Rectangular' },
   'controls.rotation': { ja: '回転', en: 'Rotation' },
-  'controls.rotationNone': { ja: '回転なし', en: 'No rotation' },
+  'controls.rotationNone': { ja: '横書きのみ', en: 'Horizontal only' },
+  'controls.rotationOrthogonal': { ja: '横＋90°', en: 'Horizontal + 90°' },
   'controls.rotationLight': { ja: '軽め（-30°〜30°）', en: 'Light (-30° to 30°)' },
   'controls.rotationWide': { ja: 'ランダム（-60°〜60°）', en: 'Random (-60° to 60°)' },
   'controls.wordSpacing': { ja: '単語間隔', en: 'Word Spacing' },
@@ -66,18 +78,64 @@ const translations = {
     en: 'Use slider or type a value between {min} and {max}px.',
   },
   'controls.fileReadError': { ja: 'ファイルの読み込みに失敗しました。', en: 'Failed to read file.' },
+  'controls.posFilter': { ja: '品詞', en: 'Part of speech' },
+  'controls.posNoun': { ja: '名詞', en: 'Noun' },
+  'controls.posVerb': { ja: '動詞', en: 'Verb' },
+  'controls.posAdj': { ja: '形容詞', en: 'Adjective' },
+  'controls.posAdv': { ja: '副詞', en: 'Adverb' },
+  'controls.excludeNoise': { ja: 'ノイズ品詞を除外', en: 'Exclude noise POS' },
+  'controls.excludeNoiseHint': { ja: '非自立・代名詞・数詞・接尾を除外します。', en: 'Drops dependent nouns, pronouns, numerals, and suffixes.' },
+  'controls.compoundNouns': { ja: '複合名詞を結合', en: 'Join compound nouns' },
+  'controls.compoundMax': { ja: '最大結合長', en: 'Max compound length' },
+  'controls.tokenForm': { ja: '表記', en: 'Word form' },
+  'controls.tokenFormBasic': { ja: '基本形', en: 'Dictionary form' },
+  'controls.tokenFormSurface': { ja: '表層形', en: 'Surface form' },
+  'controls.minFrequency': { ja: '最低頻度', en: 'Min frequency' },
+  'controls.sizeScale': { ja: 'サイズ写像', en: 'Size scale' },
+  'controls.sizeScaleLinear': { ja: '線形', en: 'Linear' },
+  'controls.sizeScaleSqrt': { ja: '平方根', en: 'Square root' },
+  'controls.sizeScaleLog': { ja: '対数', en: 'Log' },
+  'controls.wordList': { ja: '語リスト', en: 'Word list' },
+  'controls.wordListHint': { ja: '行をクリックして除外。複数選択して結合できます。', en: 'Click a row to exclude it. Select multiple rows to merge.' },
+  'controls.exclude': { ja: '除外', en: 'Exclude' },
+  'controls.merge': { ja: '選択した語を結合', en: 'Merge selected' },
+  'controls.frequency': { ja: '頻度', en: 'Freq.' },
+  'controls.share': { ja: '構成比', en: 'Share' },
+  'controls.fontFamily': { ja: '書体', en: 'Typeface' },
+  'controls.fontSans': { ja: 'ゴシック', en: 'Sans' },
+  'controls.fontSerif': { ja: '明朝', en: 'Serif' },
+  'controls.fontRounded': { ja: '丸ゴシック', en: 'Rounded' },
+  'controls.fontWeight': { ja: 'ウェイト', en: 'Weight' },
+  'controls.weightByFrequency': { ja: '頻度でウェイトを変える', en: 'Weight by frequency' },
+  'controls.canvasBackground': { ja: '背景', en: 'Background' },
+  'controls.bgWhite': { ja: '白', en: 'White' },
+  'controls.bgDark': { ja: '濃色', en: 'Dark' },
+  'controls.bgTransparent': { ja: '透明', en: 'Transparent' },
+  'controls.colorScheme': { ja: '配色', en: 'Palette' },
+  'controls.colorRule': { ja: '色のルール', en: 'Color rule' },
+  'controls.aspectRatio': { ja: '比率', en: 'Aspect ratio' },
+  'controls.preset': { ja: 'プリセット', en: 'Presets' },
+  'controls.presetReport': { ja: 'レポート', en: 'Report' },
+  'controls.presetPresentation': { ja: 'プレゼン', en: 'Presentation' },
+  'controls.presetDark': { ja: 'ダーク', en: 'Dark' },
+  'controls.chartTitle': { ja: 'タイトル', en: 'Title' },
+  'controls.chartSource': { ja: '出典', en: 'Source' },
+  'controls.titlePlaceholder': { ja: '任意', en: 'Optional' },
 
-  // --- WordCloudPreview.tsx ---
   'preview.wordCount': { ja: '表示語数', en: 'Displayed words' },
   'preview.ariaLabel': { ja: '日本語ワードクラウド', en: 'Word Cloud' },
   'preview.calculating': { ja: 'レイアウトを計算しています...', en: 'Calculating layout...' },
   'preview.noWordsDetail': { ja: '抽出できる単語が見つかりません。設定を確認してください。', en: 'No words found. Check your settings.' },
   'preview.downloadFailed': { ja: '画像の生成に失敗しました。', en: 'Failed to generate image.' },
-  'colorRule.frequency': { ja: '頻度ベース', en: 'By Frequency' },
-  'colorRule.pos': { ja: '品詞ベース', en: 'By Part of Speech' },
-  'colorRule.scheme': { ja: '単語ベース', en: 'By Word' },
+  'preview.relayout': { ja: '再配置', en: 'Shuffle' },
+  'preview.pngScale': { ja: 'PNG倍率', en: 'PNG scale' },
+  'preview.clickToExclude': { ja: 'クリックで除外', en: 'Click to exclude' },
+  'preview.viewCloud': { ja: 'クラウド', en: 'Cloud' },
+  'preview.viewBubble': { ja: 'バブル', en: 'Bubble' },
+  'colorRule.frequency': { ja: '頻度', en: 'Frequency' },
+  'colorRule.pos': { ja: '品詞', en: 'Part of speech' },
+  'colorRule.scheme': { ja: '単語', en: 'Word' },
 
-  // --- ProjectListModal.tsx ---
   'projectList.title': { ja: 'プロジェクトを開く', en: 'Open Project' },
   'projectList.loading': { ja: '読み込み中...', en: 'Loading...' },
   'projectList.error': { ja: 'プロジェクト一覧の取得に失敗しました。', en: 'Failed to load project list.' },
@@ -86,7 +144,6 @@ const translations = {
   'projectList.deleteConfirm': { ja: '削除?', en: 'Delete?' },
   'projectList.deleteFailed': { ja: '削除に失敗しました。', en: 'Failed to delete.' },
 
-  // --- SaveProjectModal.tsx ---
   'saveModal.title': { ja: 'プロジェクトを保存', en: 'Save Project' },
   'saveModal.nameLabel': { ja: 'プロジェクト名', en: 'Project Name' },
   'saveModal.namePlaceholder': { ja: 'プロジェクト名を入力', en: 'Enter project name' },
@@ -95,24 +152,20 @@ const translations = {
   'saveModal.saving': { ja: '保存中...', en: 'Saving...' },
   'saveModal.saveFailed': { ja: '保存に失敗しました。', en: 'Failed to save.' },
 
-  // --- useKuromojiTokenizer.ts ---
   'kuromoji.scriptFailed': { ja: 'kuromojiスクリプトの読み込みに失敗しました。', en: 'Failed to load kuromoji script.' },
   'kuromoji.scriptNotLoaded': { ja: 'kuromojiのスクリプトが読み込まれていません。', en: 'Kuromoji script not loaded.' },
   'kuromoji.dictFailed': { ja: '辞書の読み込みに失敗しました。', en: 'Failed to load dictionary.' },
   'kuromoji.loadFailed': { ja: 'kuromojiの読み込みに失敗しました。', en: 'Failed to load kuromoji.' },
 
-  // --- constants/colors.ts ---
   'color.vivid': { ja: 'ビビッド', en: 'Vivid' },
   'color.sunset': { ja: 'サンセット', en: 'Sunset' },
   'color.forest': { ja: 'フォレスト', en: 'Forest' },
   'color.mono': { ja: 'モノトーン', en: 'Monotone' },
 
-  // --- constants/aspectRatios.ts ---
   'aspect.square': { ja: '正方形 (1:1)', en: 'Square (1:1)' },
   'aspect.portrait': { ja: '縦長 (3:4)', en: 'Portrait (3:4)' },
   'aspect.landscape': { ja: '横長 (16:9)', en: 'Landscape (16:9)' },
 
-  // --- Sample text ---
   'sampleText': {
     ja: `生成AIやデータビジュアライゼーションへの注目が高まるなか、テキストデータを素早く把握する手法としてワードクラウドが再評価されています。文章全体を一読しても掴みにくい特徴語が、サイズや色で視覚的に浮かび上がることで、メッセージの核や語彙の偏りを即座に把握できます。
 

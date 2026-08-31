@@ -1,12 +1,22 @@
-import { useEffect, useMemo, useState } from 'react'
-import { forceCollide, forceSimulation, forceX, forceY } from 'd3-force'
-import { scaleLinear, scaleOrdinal } from 'd3-scale'
+import { useEffect, useState } from 'react'
+import { hierarchy, pack } from 'd3-hierarchy'
 import cloud from 'd3-cloud'
 import type { ViewMode, WordCloudSettings, WordFrequency } from '../types'
-import { getColorScheme } from '../constants/colors'
+import { getFontOption } from '../constants/fonts'
+import {
+  TEXT_HEIGHT_RATIO,
+  contrastingLabel,
+  createWordColorScale,
+  fontSizeForValue,
+  fontWeightForValue,
+  getCanvasInsets,
+  measureTextWidth,
+  mulberry32,
+} from '../lib/layout'
 
 export interface LayoutWord extends WordFrequency {
   fontSize: number
+  fontWeight: number
   x: number
   y: number
   rotate: number
@@ -14,12 +24,8 @@ export interface LayoutWord extends WordFrequency {
   radius: number
   width?: number
   height?: number
-}
-
-interface BubbleNode extends WordFrequency {
-  radius: number
-  x?: number
-  y?: number
+  showLabel: boolean
+  textColor?: string
 }
 
 interface LayoutResult {
@@ -39,7 +45,6 @@ type CloudWord = WordFrequency & {
 const MAX_CLOUD_ATTEMPTS = 5
 const FONT_SCALE_FACTOR = 0.9
 const MAX_RECT_RESOLUTION_ITERATIONS = 120
-const TEXT_HEIGHT_RATIO = 0.75
 
 const clamp = (value: number, min: number, max: number) => {
   if (Number.isNaN(value)) return min
@@ -79,13 +84,14 @@ const resolveWordOverlaps = (
   width: number,
   height: number,
   padding: number,
+  rng: () => number,
 ): LayoutWord[] => {
   if (words.length <= 1) return words
 
   const nodes = words.map((word) => ({
     ...word,
     width: word.width ?? word.fontSize,
-    height: word.height ?? (word.fontSize * TEXT_HEIGHT_RATIO),
+    height: word.height ?? word.fontSize * TEXT_HEIGHT_RATIO,
   }))
 
   const paddingOffset = Math.max(2, padding * 1.5)
@@ -98,8 +104,8 @@ const resolveWordOverlaps = (
       for (let j = i + 1; j < nodes.length; j += 1) {
         const a = nodes[i]
         const b = nodes[j]
-        const dx = (b.x - a.x) || (Math.random() > 0.5 ? 1 : -1) * 0.1
-        const dy = (b.y - a.y) || (Math.random() > 0.5 ? 1 : -1) * 0.1
+        const dx = (b.x - a.x) || (rng() > 0.5 ? 1 : -1) * 0.1
+        const dy = (b.y - a.y) || (rng() > 0.5 ? 1 : -1) * 0.1
 
         const overlapX = a.width / 2 + b.width / 2 + paddingOffset - Math.abs(dx)
         const overlapY = a.height / 2 + b.height / 2 + paddingOffset - Math.abs(dy)
@@ -139,12 +145,65 @@ const resolveWordOverlaps = (
       node.y = clamp(node.y, halfHeight, height - halfHeight)
     })
 
-    if (!moved) {
-      break
-    }
+    if (!moved) break
   }
 
   return nodes
+}
+
+const layoutBubbles = (
+  words: WordFrequency[],
+  width: number,
+  height: number,
+  settings: WordCloudSettings,
+  colorScale: (word: WordFrequency) => string,
+  minValue: number,
+  maxValue: number,
+): LayoutWord[] => {
+  const insets = getCanvasInsets(settings)
+  const innerWidth = Math.max(width - insets.left - insets.right, 1)
+  const innerHeight = Math.max(height - insets.top - insets.bottom, 1)
+
+  const root = hierarchy<{ children?: WordFrequency[]; text?: string; value?: number; pos?: string }>({
+    children: words,
+  }).sum((node) => node.value ?? 0)
+
+  const packed = pack<typeof root.data>()
+    .size([innerWidth, innerHeight])
+    .padding(Math.max(1, settings.padding))(root)
+
+  return packed.leaves().flatMap((node) => {
+    const text = node.data.text
+    const value = node.data.value
+    if (!text || value == null) return []
+    const word: WordFrequency = { text, value, pos: node.data.pos }
+    const color = colorScale(word)
+    const fontWeight = fontWeightForValue(word.value, minValue, maxValue, settings)
+    const maxWidth = node.r * 2 * 0.86
+    let fontSize = Math.min(node.r * 0.42, settings.fontSizeRange[1])
+    let textWidth = measureTextWidth(word.text, fontSize, settings, fontWeight)
+    while (fontSize > 8 && (textWidth > maxWidth || fontSize * TEXT_HEIGHT_RATIO > node.r * 1.15)) {
+      fontSize -= 1
+      textWidth = measureTextWidth(word.text, fontSize, settings, fontWeight)
+    }
+    const showLabel = textWidth <= maxWidth && fontSize >= 8
+    return [{
+      text: word.text,
+      value: word.value,
+      pos: word.pos,
+      fontSize: showLabel ? fontSize : 0,
+      fontWeight,
+      radius: node.r,
+      x: node.x + insets.left,
+      y: node.y + insets.top,
+      rotate: 0,
+      color,
+      width: node.r * 2,
+      height: node.r * 2,
+      showLabel,
+      textColor: contrastingLabel(color),
+    }]
+  })
 }
 
 export const useWordLayout = (
@@ -157,23 +216,17 @@ export const useWordLayout = (
   const [layoutWords, setLayoutWords] = useState<LayoutWord[]>([])
   const [isCalculating, setIsCalculating] = useState(false)
 
-  const [minValue, maxValue] = useMemo(() => {
-    if (!words.length) return [0, 1]
+  const [minValue, maxValue] = (() => {
+    if (!words.length) return [0, 1] as const
     const values = words.map((word) => word.value)
     const min = Math.min(...values)
     const max = Math.max(...values)
-    if (min === max) {
-      return [min, max + 1]
-    }
-    return [min, max]
-  }, [words])
+    if (min === max) return [min, max + 1] as const
+    return [min, max] as const
+  })()
 
-  const fontSizeRange = useMemo(
-    () => settings.fontSizeRange,
-    [settings.fontSizeRange[0], settings.fontSizeRange[1]],
-  )
-
-  const rotationAngles = useMemo(() => settings.rotationAngles, [settings.rotationAngles.join(',')])
+  const fontSizeRange = settings.fontSizeRange
+  const rotationAngles = settings.rotationAngles
 
   useEffect(() => {
     if (!width || !height || !words.length) {
@@ -183,109 +236,47 @@ export const useWordLayout = (
     }
 
     setIsCalculating(true)
-
-    // Create color scale based on color rule
-    let colorScale: (word: WordFrequency) => string
-
-    const schemeColors = getColorScheme(settings.colorSchemeId).colors
-
-    if (settings.colorRule === 'pos') {
-      // POS-based coloring
-      const posColors: Record<string, string> = {
-        '名詞': schemeColors[0],
-        '動詞': schemeColors[1] ?? schemeColors[0],
-        '形容詞': schemeColors[2] ?? schemeColors[0],
-        '副詞': schemeColors[3] ?? schemeColors[0],
-      }
-      colorScale = (word) => posColors[word.pos ?? '名詞'] ?? '#6b7280' // gray fallback
-    } else if (settings.colorRule === 'frequency') {
-      // Frequency-based coloring (gradient from light to dark)
-      const frequencyColorScale = scaleLinear<string>()
-        .domain([minValue, maxValue])
-        .range([schemeColors[0], schemeColors[schemeColors.length - 1]])
-      colorScale = (word) => frequencyColorScale(word.value)
-    } else {
-      // Scheme-based coloring (original)
-      const schemeColorScale = scaleOrdinal<string, string>()
-        .domain(words.map((word) => word.text))
-        .range(schemeColors)
-      colorScale = (word) => schemeColorScale(word.text)
-    }
+    const colorScale = createWordColorScale(settings, words, minValue, maxValue)
+    const rng = mulberry32(settings.layoutSeed || 1)
 
     if (mode === 'bubble') {
-      const radiusScale = scaleLinear()
-        .domain([minValue, maxValue])
-        .range([Math.min(width, height) * 0.03, Math.min(width, height) * 0.12])
-
-      const nodes: BubbleNode[] = words.map((word) => ({
-        ...word,
-        radius: radiusScale(word.value),
-        x: width / 2,
-        y: height / 2,
-      }))
-
-      const simulation = forceSimulation<BubbleNode>(nodes)
-        .force('x', forceX(width / 2).strength(0.05))
-        .force('y', forceY(height / 2).strength(0.05))
-        .force('collide', forceCollide<BubbleNode>().radius((d) => d.radius + settings.padding + 2))
-        .stop()
-
-      for (let i = 0; i < 300; i += 1) {
-        simulation.tick()
-      }
-
-      simulation.stop()
-
-      const mapped = nodes.map<LayoutWord>((node) => {
-        const clampedX = Math.max(node.radius, Math.min(width - node.radius, node.x ?? width / 2))
-        const clampedY = Math.max(node.radius, Math.min(height - node.radius, node.y ?? height / 2))
-        const fontSize = node.radius * 0.9
-
-        const textHeight = fontSize * TEXT_HEIGHT_RATIO
-        return {
-          text: node.text,
-          value: node.value,
-          fontSize,
-          radius: node.radius,
-          x: clampedX,
-          y: clampedY,
-          rotate: 0,
-          color: colorScale(node),
-          width: fontSize,
-          height: textHeight,
-        }
-      })
-
+      const mapped = layoutBubbles(words, width, height, settings, colorScale, minValue, maxValue)
       setLayoutWords(mapped)
       setIsCalculating(false)
       return
     }
 
     let isCancelled = false
-    const effectiveRotationAngles = rotationAngles.length > 0 ? rotationAngles : ([0] as number[])
+    const effectiveRotationAngles = rotationAngles.length > 0 ? rotationAngles : [0]
+    const fontFamily = getFontOption(settings.fontFamilyId).family
+    const insets = getCanvasInsets(settings)
+    const layoutWidth = Math.max(width - insets.left - insets.right, 1)
+    const layoutHeight = Math.max(height - insets.top - insets.bottom, 1)
 
     const createLayout = () => cloud<CloudWord>()
     type CloudLayoutInstance = ReturnType<typeof createLayout>
     const layoutInstances: CloudLayoutInstance[] = []
 
     const attemptLayout = (range: [number, number], attempt = 0) => {
-      const fontScale = scaleLinear()
-        .domain([minValue, maxValue])
-        .range(range)
-
       const layout = createLayout()
-        .size([width, height])
+        .size([layoutWidth, layoutHeight])
         .words(words.map((word) => ({ ...word })))
         .padding(settings.padding)
         .rotate(() => {
-          const index = Math.floor(Math.random() * effectiveRotationAngles.length)
-          const baseAngle = effectiveRotationAngles[index]
+          const index = Math.floor(rng() * effectiveRotationAngles.length)
+          const baseAngle = effectiveRotationAngles[index] ?? 0
           if (!baseAngle) return 0
-          const sign = Math.random() < 0.5 ? -1 : 1
+          const sign = rng() < 0.5 ? -1 : 1
           return baseAngle * sign
         })
         .spiral(settings.spiral)
-        .fontSize((d) => fontScale(d.value))
+        .font(fontFamily)
+        .fontWeight((d) => fontWeightForValue(d.value, minValue, maxValue, settings))
+        .fontSize((d) => {
+          const unitSize = fontSizeForValue(d.value, minValue, maxValue, settings)
+          const scale = range[1] / Math.max(fontSizeRange[1], 1)
+          return unitSize * scale
+        })
 
       layoutInstances.push(layout)
 
@@ -302,7 +293,6 @@ export const useWordLayout = (
           return
         }
 
-        // Calculate bounding box of the generated cloud
         let minX = Infinity
         let maxX = -Infinity
         let minY = Infinity
@@ -311,81 +301,55 @@ export const useWordLayout = (
         generated.forEach((word) => {
           const x = word.x ?? 0
           const y = word.y ?? 0
-          // Use a rough estimate for word dimensions if not available
-          // d3-cloud usually provides width/height but sometimes only size
           const w = word.width ?? (word.size ?? 0)
-          // Height is often smaller than size due to font metrics, but let's be safe
           const h = (word.height ?? (word.size ?? 0)) * TEXT_HEIGHT_RATIO
-
-          // Consider rotation
-          // Simple bounding box for rotated rectangle is complex,
-          // but we can use a safe approximation or check rotation
-          // For 0 and 90 degrees it's simple.
-          // For now, let's assume simple bounding box based on center x,y
-          // This is an approximation but sufficient for scaling
           const halfW = w / 2
           const halfH = h / 2
-
-          // If rotated 90 degrees (vertical), swap width and height
           const isVertical = Math.abs(word.rotate ?? 0) === 90
           const effectiveHalfW = isVertical ? halfH : halfW
           const effectiveHalfH = isVertical ? halfW : halfH
-
           minX = Math.min(minX, x - effectiveHalfW)
           maxX = Math.max(maxX, x + effectiveHalfW)
           minY = Math.min(minY, y - effectiveHalfH)
           maxY = Math.max(maxY, y + effectiveHalfH)
         })
 
-        // Calculate scale to fit canvas
         const cloudWidth = maxX - minX
         const cloudHeight = maxY - minY
-
-        // Avoid division by zero
         const safeCloudWidth = Math.max(cloudWidth, 1)
         const safeCloudHeight = Math.max(cloudHeight, 1)
-
-        const availableWidth = Math.max(width - settings.padding * 2, 1)
-        const availableHeight = Math.max(height - settings.padding * 2, 1)
-
-        const scaleX = availableWidth / safeCloudWidth
-        const scaleY = availableHeight / safeCloudHeight
-
-        // Use the smaller scale to fit both dimensions, but allow some zoom
-        // Cap the scale to avoid extreme zooming for few words
-        const scale = Math.min(scaleX, scaleY, 5)
+        const availableWidth = Math.max(layoutWidth - settings.padding * 2, 1)
+        const availableHeight = Math.max(layoutHeight - settings.padding * 2, 1)
+        const scale = Math.min(availableWidth / safeCloudWidth, availableHeight / safeCloudHeight, 5)
+        const cloudCenterX = (minX + maxX) / 2
+        const cloudCenterY = (minY + maxY) / 2
 
         const mapped = generated.map<LayoutWord>((word) => {
-          const baseFontSize = word.size ?? fontScale(word.value)
+          const baseFontSize = word.size ?? fontSizeForValue(word.value, minValue, maxValue, settings)
           const scaledFontSize = baseFontSize * scale
-
-          // Scale coordinates. 
-          // Center the cloud: (x - center of cloud) * scale + center of canvas
-          const cloudCenterX = (minX + maxX) / 2
-          const cloudCenterY = (minY + maxY) / 2
-
-          const x = ((word.x ?? 0) - cloudCenterX) * scale + width / 2
-          const y = ((word.y ?? 0) - cloudCenterY) * scale + height / 2
-
-          const resolvedWidth = (word.width ?? baseFontSize) * scale
-          const resolvedHeight = (word.height ?? baseFontSize) * TEXT_HEIGHT_RATIO * scale
-
+          const x = ((word.x ?? 0) - cloudCenterX) * scale + insets.left + layoutWidth / 2
+          const y = ((word.y ?? 0) - cloudCenterY) * scale + insets.top + layoutHeight / 2
+          const color = colorScale({ text: word.text ?? '', value: word.value, pos: word.pos })
           return {
             text: word.text ?? '',
             value: word.value,
+            pos: word.pos,
             fontSize: scaledFontSize,
+            fontWeight: fontWeightForValue(word.value, minValue, maxValue, settings),
             radius: 0,
             x,
             y,
             rotate: word.rotate ?? 0,
-            color: colorScale({ text: word.text ?? '', value: word.value, pos: word.pos }),
-            width: resolvedWidth,
-            height: resolvedHeight,
+            color,
+            width: (word.width ?? baseFontSize) * scale,
+            height: (word.height ?? baseFontSize) * TEXT_HEIGHT_RATIO * scale,
+            showLabel: true,
+            textColor: color,
           }
         })
 
         const finalWords = hasOverlap(mapped)
-          ? resolveWordOverlaps(mapped, width, height, settings.padding)
+          ? resolveWordOverlaps(mapped, width, height, settings.padding, rng)
           : mapped
 
         setLayoutWords(finalWords)
@@ -408,47 +372,33 @@ export const useWordLayout = (
     fontSizeRange,
     settings.padding,
     settings.spiral,
+    settings.fontFamilyId,
+    settings.fontWeight,
+    settings.weightByFrequency,
+    settings.sizeScale,
+    settings.layoutSeed,
+    settings.chartTitle,
+    settings.chartSource,
     rotationAngles,
     minValue,
     maxValue,
     mode,
   ])
 
-  // Update colors when color scheme or color rule changes (without re-layout)
   useEffect(() => {
     if (!layoutWords.length) return
-
-    let colorScale: (word: WordFrequency) => string
-
-    const schemeColors = getColorScheme(settings.colorSchemeId).colors
-
-    if (settings.colorRule === 'pos') {
-      const posColors: Record<string, string> = {
-        '名詞': schemeColors[0],
-        '動詞': schemeColors[1] ?? schemeColors[0],
-        '形容詞': schemeColors[2] ?? schemeColors[0],
-        '副詞': schemeColors[3] ?? schemeColors[0],
-      }
-      colorScale = (word) => posColors[word.pos ?? '名詞'] ?? '#6b7280'
-    } else if (settings.colorRule === 'frequency') {
-      const frequencyColorScale = scaleLinear<string>()
-        .domain([minValue, maxValue])
-        .range([schemeColors[0], schemeColors[schemeColors.length - 1]])
-      colorScale = (word) => frequencyColorScale(word.value)
-    } else {
-      const schemeColorScale = scaleOrdinal<string, string>()
-        .domain(words.map((word) => word.text))
-        .range(schemeColors)
-      colorScale = (word) => schemeColorScale(word.text)
-    }
-
+    const colorScale = createWordColorScale(settings, words, minValue, maxValue)
     setLayoutWords((prevWords) =>
-      prevWords.map((word) => ({
-        ...word,
-        color: colorScale({ text: word.text, value: word.value, pos: word.pos }),
-      })),
+      prevWords.map((word) => {
+        const color = colorScale({ text: word.text, value: word.value, pos: word.pos })
+        return {
+          ...word,
+          color,
+          textColor: mode === 'bubble' ? contrastingLabel(color) : color,
+        }
+      }),
     )
-  }, [settings.colorSchemeId, settings.colorRule, words, minValue, maxValue])
+  }, [settings.colorSchemeId, settings.colorRule, settings.canvasBackground, words, minValue, maxValue, mode])
 
   return { layoutWords, isCalculating }
 }

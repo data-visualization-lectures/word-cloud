@@ -1,6 +1,15 @@
 # Japanese Word Cloud (React + Vite)
 
-ブラウザで日本語文章を貼り付けると Kuromoji.js で形態素解析し、SVG ベースのワードクラウドを生成するアプリです。`src/App.tsx` が UI 本体で、`src/lib/textProcessing.ts` が頻度計算、`src/hooks/useKuromojiTokenizer.ts` が辞書ロードを担当しています。
+ブラウザで日本語文章を貼り付けると Kuromoji.js で形態素解析し、SVG ベースのワードクラウド／ワードバブルを生成するアプリです。`src/App.tsx` が UI 本体で、`src/lib/textProcessing.ts` が頻度計算、`src/hooks/useKuromojiTokenizer.ts` が辞書ロードを担当しています。
+
+主な機能:
+
+- 複合名詞の結合、品詞フィルタ、ノイズ品詞の除外、基本形／表層形の切替
+- 語リストからの除外・結合、クラウド上の語クリックでストップワード追加
+- 頻度CSVの直接入力、レポート／プレゼン／ダークのスタイルプリセット
+- ゴシック／明朝／丸ゴシック、頻度に応じたウェイトと連続配色、白／濃色／透明のキャンバス
+- ワードバブルは circle packing。ラベルは円に収まるときだけ表示
+- SVG / 高解像度PNG / CSV 書き出し、再配置、タイトルと出典
 
 ## Kuromoji の読み込み方法
 

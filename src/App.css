@@ -24,7 +24,9 @@
 }
 
 .controls-panel {
-  flex: 0 0 360px;
+  flex: 0 0 380px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -268,8 +270,10 @@ button:not(:disabled):hover {
 
 .preview-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .preview-meta {
@@ -283,9 +287,24 @@ button:not(:disabled):hover {
   width: 100%;
   position: relative;
   border-radius: 18px;
-  background: #f8fafc;
-  border: 1px dashed #cbd5f5;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   overflow: hidden;
+}
+
+.preview-canvas-wrapper.canvas-dark {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+.preview-canvas-wrapper.canvas-transparent {
+  background-image:
+    linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+    linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+    linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
 }
 
 /* Removed ::before with fixed padding-top - height is now dynamic based on aspect ratio */
@@ -315,6 +334,188 @@ svg {
   font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', system-ui, sans-serif;
 }
 
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: #334155;
+}
+
+.preset-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.preset-button,
+.compact-button {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  box-shadow: none;
+}
+
+.preset-button {
+  flex: 1;
+  background: #eef2ff;
+  color: #312e81;
+}
+
+.preset-button:hover:not(:disabled) {
+  background: #e0e7ff;
+  transform: none;
+  box-shadow: none;
+}
+
+.segmented {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.6rem;
+}
+
+.segmented button {
+  flex: 1;
+  background: #e2e8f0;
+  color: #334155;
+  box-shadow: none;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.segmented .segmented-active {
+  background: #0f172a;
+  color: #fff;
+}
+
+.file-row {
+  margin-bottom: 0.5rem;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.word-list-table-wrap {
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.word-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.word-list-table th,
+.word-list-table td {
+  padding: 0.35rem 0.45rem;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.word-list-table .numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.word-list-term {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.word-list-actions {
+  margin-bottom: 0.5rem;
+}
+
+.text-button {
+  background: none;
+  color: #dc2626;
+  box-shadow: none;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+.text-button:hover:not(:disabled) {
+  background: #fef2f2;
+  transform: none;
+  box-shadow: none;
+}
+
+.preview-hint {
+  margin-left: 0.75rem;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.png-scale {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.png-scale select {
+  border: 1px solid #cbd5f5;
+  border-radius: 8px;
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+}
+
+.word-tooltip {
+  position: absolute;
+  z-index: 2;
+  background: #0f172a;
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.78rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.pos-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.pos-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pos-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
 @media (max-width: 1100px) {
   .word-cloud-app {
     flex-direction: column;
@@ -328,6 +529,8 @@ svg {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .view-mode-select,
