@@ -59,6 +59,8 @@ export interface ProjectData {
   settings: WordCloudSettings
   inputMode?: InputMode
   wordMerges?: Record<string, string>
+  viewMode?: ViewMode
+  showBoundingBoxes?: boolean
 }
 
 export interface CreateProjectPayload {
