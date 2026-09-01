@@ -5,8 +5,9 @@ import { WordCloudPreview, type WordCloudPreviewHandle } from './components/Word
 import { useProject } from './hooks/useProject'
 import { blobToBase64 } from './lib/image-utils'
 import { DEFAULT_JA_STOPWORDS } from './constants/stopwords'
-import { DEFAULT_SETTINGS, applyStylePreset, normalizeSettings } from './constants/settings'
+import { DEFAULT_SETTINGS, applyStylePreset } from './constants/settings'
 import { useKuromojiTokenizer } from './hooks/useKuromojiTokenizer'
+import { normalizeProjectData } from './lib/projectData'
 import {
   addStopword,
   computeWordFrequencies,
@@ -15,7 +16,7 @@ import {
 } from './lib/textProcessing'
 import { useI18n } from './i18n'
 import type { TranslationKey } from './i18n'
-import type { InputMode, StylePresetId, ViewMode, WordCloudSettings } from './types'
+import type { InputMode, ProjectData, StylePresetId, ViewMode, WordCloudSettings } from './types'
 
 const defaultStopwords = DEFAULT_JA_STOPWORDS.join('\n')
 
@@ -153,6 +154,27 @@ function App() {
     setSettings((prev) => ({ ...prev, layoutSeed: prev.layoutSeed + 1 }))
   }, [])
 
+  const applyProjectData = useCallback((raw?: Partial<ProjectData> | null) => {
+    const project = normalizeProjectData(raw)
+    setText(project.text)
+    setStopwordsText(project.stopwordsText)
+    setSettings(project.settings)
+    setInputMode(project.inputMode)
+    setWordMerges(project.wordMerges)
+    setViewMode(project.viewMode)
+    setShowBoundingBoxes(project.showBoundingBoxes)
+    setGeneratedText(project.text)
+  }, [
+    setText,
+    setStopwordsText,
+    setSettings,
+    setInputMode,
+    setWordMerges,
+    setViewMode,
+    setShowBoundingBoxes,
+    setGeneratedText,
+  ])
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const projectId = params.get('projectId')
@@ -168,16 +190,11 @@ function App() {
       try {
         showProcessingToast(t('processing.projectLoad'))
         const project = await loadProject(projectId)
-        setText(project.text)
-        setStopwordsText(project.stopwordsText)
-        setSettings(normalizeSettings(project.settings))
-        setInputMode(project.inputMode === 'frequency' ? 'frequency' : 'text')
-        setWordMerges(project.wordMerges ?? {})
+        applyProjectData(project)
         const header = document.querySelector('dataviz-tool-header') as any
         const context = header?.getProjectContext?.()
         setCurrentProjectId(context?.canOverwrite ? context.projectId || projectId : null)
         setCurrentProjectName(context?.projectName || '')
-        setGeneratedText(project.text)
         return true
       } catch (error) {
         console.error('Failed to load project from URL', error)
@@ -194,11 +211,11 @@ function App() {
       clearInterval(intervalId)
       clearTimeout(timeoutId)
     }
-  }, [currentProjectId, loadProject, showProcessingToast, t])
+  }, [applyProjectData, currentProjectId, loadProject, showProcessingToast, t])
 
-  const getProjectState = useCallback(() => {
-    return { text, stopwordsText, settings, inputMode, wordMerges }
-  }, [text, stopwordsText, settings, inputMode, wordMerges])
+  const getProjectState = useCallback((): ProjectData => {
+    return { text, stopwordsText, settings, inputMode, wordMerges, viewMode, showBoundingBoxes }
+  }, [text, stopwordsText, settings, inputMode, wordMerges, viewMode, showBoundingBoxes])
 
   const getThumbnailDataUri = useCallback(async () => {
     const blob = await previewRef.current?.getThumbnailBlob() ?? null
@@ -272,12 +289,7 @@ function App() {
           try {
             setCurrentProjectId(meta.canOverwrite ? meta.projectId : null)
             setCurrentProjectName(meta.projectName || '')
-            setText(projectData.text)
-            setStopwordsText(projectData.stopwordsText)
-            setSettings(normalizeSettings(projectData.settings))
-            setInputMode(projectData.inputMode === 'frequency' ? 'frequency' : 'text')
-            setWordMerges(projectData.wordMerges ?? {})
-            setGeneratedText(projectData.text)
+            applyProjectData(projectData)
           } catch (error) {
             console.error('Failed to restore project data:', error)
           }
@@ -288,7 +300,7 @@ function App() {
         },
       })
     })
-  }, [handleLoadProjectClick, handleSaveClick, installHeaderProcessingToasts, t])
+  }, [applyProjectData, handleLoadProjectClick, handleSaveClick, installHeaderProcessingToasts, t])
 
   return (
     <div className="app-shell">
